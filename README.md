@@ -246,9 +246,28 @@ Tools exposed:
   title={Omega-Cube: A Multi-Dimensional Hierarchical Graph Memory System},
   author={Omega-Cube Research},
   year={2026},
-  url={https://github.com/omega-cube/omega-cube-engine}
+  url={https://github.com/Ping-iop/omega-cube-engine}
 }
 ```
+
+---
+
+## 🙏 Acknowledgments
+
+This project builds upon the shoulders of giants. Special gratitude to:
+
+**Andrej Karpathy** — for [AutoResearch](https://github.com/karpathy/autoresearch), [llm.c](https://github.com/karpathy/llm.c), [nanoGPT](https://github.com/karpathy/nanoGPT), [micrograd](https://github.com/karpathy/micrograd), and a decade of relentless public-domain AI education. Your tools, videos, and open-source ethos have democratized AI research and inspired an entire generation of builders who would otherwise never have had access to this field. AutoResearch's autonomous experimentation loop directly inspired Omega-Cube's self-optimization engine. The magnetic cube metaphor — knowledge domains rotating and aligning like Rubik's cubes — was born from the same spirit of playful exploration you embody.
+
+**Google DeepMind** — for [DiffusionGemma](https://deepmind.google/models/gemma/diffusiongemma/), proving that diffusion models can generate coherent text non-autoregressively, inspiring Omega-Cube's parallel graph sampling.
+
+**Nous Research** — for Hermes Agent, the platform that runs this entire ecosystem.
+
+**The open-source AI community** — every paper on arXiv, every public dataset, every shared model weight, and every `pip install` that makes independent research possible.
+
+---
+
+*"Research is now entirely the domain of autonomous swarms of AI agents running across compute cluster megastructures in the skies. This repo is the story of how it all began."*  
+— @karpathy, AutoResearch README, March 2026
 
 ---
 
