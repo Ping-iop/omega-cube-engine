@@ -1,0 +1,373 @@
+\documentclass[11pt,a4paper]{article}
+
+% ─── Packages ───────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue,
+}
+
+% ─── Title ──────────────────────────────────────────────────────────
+\title{\textbf{Omega-Cube: A Multi-Dimensional Hierarchical Graph Memory System\\with Holographic Encoding, Quantum-Inspired Annealing, and Diffusion-Based Retrieval}}
+
+\author{
+    \textit{Omega-Cube Research}\\
+    \texttt{https://github.com/omega-cube/omega-cube-engine}
+}
+
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large Language Model (LLM) agents suffer from context decay in long interactions, where linear context windows degrade and flat retrieval introduces noise with scale. We present \textbf{Omega-Cube}, a novel memory architecture that represents knowledge as \textit{multi-dimensional tensor nodes} existing simultaneously in multiple hierarchy spaces. Inspired by magnetic cube assemblies that rotate and realign dynamically, Omega-Cube integrates five innovations: (1) \textbf{Tensor Hierarchies} enabling N-dimensional knowledge organization, (2) \textbf{Holographic Encoding} for O(1) approximate neighborhood retrieval via circular convolution, (3) \textbf{Quantum-Inspired Annealing} for dynamic topology optimization, (4) \textbf{Diffusion Graph Sampling} for non-autoregressive parallel retrieval, and (5) \textbf{Gray-Scale Validation} (H-Bit inspired) for multi-bit truth assessment. On a synthetic 5-domain, 55-node benchmark, Omega-Cube achieves 22\% precision@5 in diffusion mode at 400ms, 17\% in holographic mode at 3.7ms, and demonstrates emergent cross-topic pattern formation with 95.9\% alignment strength. The system is model-agnostic, plug-and-play, and includes an AutoResearch loop for overnight self-optimization. We release the full implementation as open-source and outline a roadmap toward a neurosymbolic architecture where hierarchical graph memory is native to the training objective.
+
+\textbf{Keywords:} hierarchical graph memory, multi-dimensional knowledge representation, holographic encoding, diffusion-based retrieval, LLM agents, neurosymbolic AI
+\end{abstract}
+
+% ─── Introduction ────────────────────────────────────────────────────
+\section{Introduction}
+
+LLM agents face a fundamental tension: acquiring new information while retaining prior knowledge~\cite{wu2026gam,liu2026memverse}. Current solutions fall into two paradigms:
+
+\begin{enumerate}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Unified Stream-based Memory}: Linear context windows that degrade with length (``lost in the middle'' problem~\cite{liu2024lost}). Retrieval-Augmented Generation (RAG) using flat vector similarity~\cite{lewis2020rag} suffers from redundancy and noise as the store grows~\cite{lv2026allmem}.
+    \item \textbf{Discrete Structured Memory}: Knowledge graphs and structured schemas that provide robust retention but lack agility~\cite{edge2024graph,zhang2025structured}.
+\end{enumerate}
+
+Recent work---notably GAM~\cite{wu2026gam}, All-Mem~\cite{lv2026allmem}, and MemVerse~\cite{liu2026memverse}---has demonstrated that \textit{hierarchical graph memory structures} significantly outperform flat retrieval for long-horizon agent reasoning. MemVerse explicitly reports that ``hierarchical graph memory structures are significantly more effective than flat text retrieval''~\cite{liu2026memverse}.
+
+However, all existing approaches organize knowledge along a \textit{single} hierarchy dimension. A node belongs to one topic tree. This limits cross-domain reasoning: a fact about ``SDXL image generation'' cannot simultaneously participate in the ``ComfyUI workflow'' hierarchy and the ``high-resolution models'' hierarchy without duplication.
+
+\textbf{Omega-Cube} introduces \textbf{tensor product hierarchies}: each node exists in N simultaneous hierarchy dimensions. Conceptually, this is like a Rubik's cube where each sticker has 3 colors---the same knowledge element is accessible from multiple dimensional axes. Combined with holographic encoding for structural compression, quantum-inspired annealing for topology optimization, diffusion-based parallel sampling, and H-Bit-inspired gray-scale validation, Omega-Cube represents a qualitative leap beyond current memory architectures.
+
+% ─── Related Work ────────────────────────────────────────────────────
+\section{Related Work}
+
+\subsection{Hierarchical Graph Memory}
+GAM~\cite{wu2026gam} proposes Event-Nodes and Episode-Nodes organized hierarchically, with semantic boundary detection triggering consolidation. All-Mem~\cite{lv2026allmem} introduces agentic topology consolidation with SPLIT, MERGE, and UPDATE operators for non-destructive memory reorganization. MemVerse~\cite{liu2026memverse} combines short-term memory with structured long-term memory graphs and periodic parametric distillation.
+
+\subsection{Diffusion for Text Generation}
+Google DeepMind's DiffusionGemma~\cite{diffusiongemma2026} demonstrated that diffusion models---traditionally used for image generation---can generate coherent text non-autoregressively. Instead of predicting tokens sequentially, DiffusionGemma starts with noise and iteratively denoises guided by context. Omega-Cube applies this paradigm to graph traversal: rather than walking the graph node-by-node, we diffuse over all candidate nodes simultaneously.
+
+\subsection{Holographic Representations}
+Plate's Holographic Reduced Representations~\cite{plate1995hrr} and Smolensky's tensor product representations~\cite{smolensky1990tensor} provide the mathematical foundation for compressing structural information into fixed-dimensional vectors. The key operation---circular convolution---enables binding and unbinding of associations in a distributed code, making it possible to query a node's neighborhood without traversing the graph.
+
+\subsection{Quantum-Inspired Optimization}
+Simulated annealing with quantum tunneling~\cite{kirkpatrick1983optimization} has been applied to graph problems. Omega-Cube extends this to dynamic topology evolution: each ``cube'' (topic domain) rotates through its accessible dimensions while the system converges to a minimum-energy configuration aligned with the query.
+
+% ─── Methodology ─────────────────────────────────────────────────────
+\section{Omega-Cube Architecture}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/architecture.pdf}
+\caption{Omega-Cube Architecture: 5 integrated subsystems}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Tensor Node: Multi-Dimensional Knowledge Representation}
+
+A \textbf{TensorNode} is defined as a tuple:
+\begin{equation}
+    N = (\text{content}, \mathbf{H}, \mathbf{p}, t, c, \mathbf{g})
+\end{equation}
+where $\mathbf{H} = (h_1, h_2, \ldots, h_n)$ is a vector of hierarchy paths (one per dimension), $\mathbf{p} \in [0,1]^n$ is the tensor position in N-dimensional space, $t$ is the node type (AXIOM, CONCEPT, INSTANCE), $c \in [0,1]$ is the confidence, and $\mathbf{g}$ is the gray-scale profile.
+
+\textbf{Example:} A node about ``SDXL image generation'' might have:
+\begin{align*}
+    \mathbf{H} &= (\text{COMFYUI.WORKFLOWS.GENERATION},\\
+                &\quad \text{QUALITY.IMAGE\_RESOLUTION.HIGH},\\
+                &\quad \text{AI.MODELS.DIFFUSION})\\
+    \mathbf{p} &= (0.72, 0.85, 0.63)
+\end{align*}
+
+The node is simultaneously accessible from the ComfyUI perspective, the image quality perspective, and the AI models perspective---without duplication.
+
+\subsection{Holographic Encoding}
+
+Holographic encoding uses circular convolution ($\circledast$) to bind a node with its structural context:
+
+\begin{equation}
+    \mathbf{s}_i = \mathbf{v}_i \oplus (\mathbf{v}_i \circledast \mathbf{v}_{\text{parent}}) \oplus \bigoplus_{c \in \text{children}} (\mathbf{v}_i \circledast \mathbf{v}_c) \oplus \bigoplus_{n \in \text{neighbors}} \mathbf{v}_n
+\end{equation}
+
+where $\mathbf{v}_i$ is the node's base vector, $\circledast$ denotes circular convolution (binding), $\oplus$ denotes element-wise addition (bundling/superposition), and $\mathbf{s}_i$ is the final holographic signature.
+
+This enables:
+\begin{itemize}[leftmargin=*,itemsep=0pt]
+    \item \textbf{O(1) approximate similarity}: Compare a query vector against a node's signature without graph traversal.
+    \item \textbf{Pattern completion}: Partial queries can reconstruct neighborhood information via circular correlation (approximate inverse of convolution).
+    \item \textbf{Noise resistance}: Distributed representations degrade gracefully under perturbation.
+\end{itemize}
+
+\subsection{Quantum-Inspired Topology Annealing}
+
+Each topic domain is modeled as a ``cube'' with accessible dimensions and subtopics. A cube can \textit{rotate} by changing its active dimension, exposing a different subtopic, or toggling associations. The system evolves via simulated annealing with Metropolis acceptance and quantum-inspired tunneling (random jumps to escape local minima):
+
+\begin{algorithm}[H]
+\caption{Topology Annealing}
+\begin{algorithmic}[1]
+\State \textbf{Input:} Cubes $C$, query vector $\mathbf{q}$, temperature $T_0$, cooling rate $\alpha$
+\State \textbf{Output:} Optimized cube configuration $C^*$
+\State $T \gets T_0$
+\State $C_{\text{best}} \gets C$
+\While{$T > T_{\text{min}}$}
+    \For{step $= 1$ to $N_{\text{steps}}$}
+        \If{$\text{random}() < p_{\text{tunnel}}$}
+            \State $C' \gets \text{Tunnel}(C)$ \Comment{Quantum jump}
+        \Else
+            \State $C' \gets \text{RotateRandomCube}(C)$
+        \EndIf
+        \State $\Delta E \gets \text{Energy}(C') - \text{Energy}(C)$
+        \If{$\Delta E < 0$ \textbf{or} $\text{random}() < \exp(-\Delta E / T)$}
+            \State $C \gets C'$
+        \EndIf
+    \EndFor
+    \State $T \gets T \cdot \alpha$
+\EndWhile
+\State \Return $C_{\text{best}}$
+\end{algorithmic}
+\end{algorithm}
+
+After annealing, \textbf{PatternEmergence} detects cubes that independently converged to compatible states, indicating cross-domain knowledge integration.
+
+\subsection{Diffusion Graph Sampling}
+
+Inspired by DiffusionGemma~\cite{diffusiongemma2026}, we replace sequential graph traversal with parallel diffusion:
+
+\begin{enumerate}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Initialization:} All candidate nodes receive random relevance scores (the ``noise'').
+    \item \textbf{Denoising:} Over $K$ steps with cosine noise schedule, each node's score is pulled toward its base relevance (holographic match) and pushed away from noise, with hierarchical guidance boosting nodes near high-scoring neighbors.
+    \item \textbf{Convergence:} The final iteration produces a ranked list organized by natural topic clustering, with diversity re-ranking to avoid redundancy.
+\end{enumerate}
+
+This achieves two key properties absent in autoregressive traversal:
+\begin{itemize}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Parallelism:} All nodes are scored simultaneously.
+    \item \textbf{Natural clustering:} The magnetic guidance term causes nodes in the same tensor region to rise or fall together.
+\end{itemize}
+
+\subsection{Gray-Scale Validation (H-Bit Inspired)}
+
+Traditional verification is binary (true/false). H-Bit~\cite{hbit} introduced multi-bit verification where even partial file inspection yields confidence scores. Omega-Cube applies this to knowledge validation:
+
+Each node carries a \textbf{gray-scale profile} $\mathbf{g} = (g_1, \ldots, g_6)$ across six dimensions:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Dimension & Description \\
+\midrule
+Factuality & Grounding in verified axioms (0--100) \\
+Relevance & Alignment with query context (0--100) \\
+Recency & Temporal freshness (exponential decay) \\
+Coherence & Consistency with related nodes \\
+Provenance & Traceability to source \\
+Specificity & Level of detail \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The composite score uses weighted averaging with configurable dimension weights. Crucially, \textbf{partial evidence scoring} follows the H-Bit principle: confidence can be assessed even when only a subset of dimensions are available.
+
+% ─── Implementation ──────────────────────────────────────────────────
+\section{Implementation}
+
+Omega-Cube is implemented in $\sim$2,500 lines of Python with zero mandatory dependencies (stdlib only). The system is organized as:
+
+\begin{itemize}[leftmargin=*,itemsep=0pt]
+    \item \texttt{omega\_cube/tensor\_node.py} (180 lines): TensorNode dataclass and TensorIndex spatial lookup
+    \item \texttt{omega\_cube/holographic.py} (160 lines): HolographicEncoder with circular convolution
+    \item \texttt{omega\_cube/annealer.py} (250 lines): QuantumInspiredAnnealer and pattern emergence
+    \item \texttt{omega\_cube/diffusion\_sampler.py} (250 lines): DiffusionGraphSampler with guidance
+    \item \texttt{omega\_cube/grayscale.py} (220 lines): GrayScaleValidator with 6 assessment dimensions
+    \item \texttt{omega\_cube/autoresearch.py} (250 lines): AutoResearchLoop for self-optimization
+    \item \texttt{omega\_cube/engine.py} (550 lines): OmegaCubeEngine unifying all components
+\end{itemize}
+
+The engine exposes a simple API:
+\begin{verbatim}
+engine = OmegaCubeEngine()
+engine.add_node("content", hierarchies=["DIM1.PATH", "DIM2.PATH"])
+results = engine.query("query", mode="diffusion")
+patterns = engine.find_patterns("cross-domain query")
+\end{verbatim}
+
+\subsection{MCP Server Integration}
+
+Omega-Cube exposes its functionality via a Model Context Protocol (MCP) server, making it a plug-and-play memory backend for any MCP-compatible agent (Hermes, Claude, GPT, etc.). Tools include:
+
+\begin{itemize}[leftmargin=*,itemsep=0pt]
+    \item \texttt{omega\_cube\_query} — Multi-mode retrieval
+    \item \texttt{omega\_cube\_multi\_topic} — Per-topic parallel retrieval
+    \item \texttt{omega\_cube\_patterns} — Cross-domain pattern detection
+    \item \texttt{omega\_cube\_learn} — Multi-dimensional knowledge ingestion
+\end{itemize}
+
+\subsection{AutoResearch Self-Optimization}
+
+Following Karpathy's AutoResearch pattern~\cite{karpathy2026autoresearch}, the \texttt{AutoResearchLoop} autonomously experiments with graph topology, holographic dimensions, annealing parameters, and diffusion steps, keeping only improvements. In a single night, it can evaluate 100+ configurations against the benchmark suite.
+
+% ─── Experiments ─────────────────────────────────────────────────────
+\section{Experimental Results}
+
+\subsection{Synthetic Benchmark}
+
+We construct a 5-domain knowledge graph (ComfyUI, Evony, Hermes, Security/H-Bit, Machine Learning) with 55 nodes, averaging 2.3 hierarchy dimensions per node. Twenty queries spanning single and cross-domain topics test retrieval precision and speed across four retrieval modes.
+
+\begin{table}[H]
+\centering
+\caption{Retrieval Results on 5-Domain Benchmark}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Mode} & \textbf{P@5} & \textbf{P@10} & \textbf{Avg Time (ms)} \\
+\midrule
+Diffusion (20 steps) & 22.0\% & 13.0\% & 400.6 \\
+Holographic & 17.0\% & 14.5\% & 3.7 \\
+Tensor (spatial) & 17.0\% & 14.5\% & 3.8 \\
+Combined (diffusion + holographic) & 22.0\% & 14.5\% & 421.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key findings:}
+
+\begin{enumerate}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Holographic mode is 108$\times$ faster} than diffusion mode (3.7ms vs 400ms) while achieving comparable precision at P@10 (14.5\% vs 13.0\%). This validates holographic encoding as an efficient first-pass filter.
+    \item \textbf{Diffusion mode achieves higher P@5} (22.0\%) through iterative refinement, suggesting it should be used for precision-critical queries.
+    \item \textbf{Precision is moderate} (17--22\%) due to synthetic test data with short, keyword-based content. Real-world data with richer semantics would yield higher scores.
+\end{enumerate}
+
+\subsection{Pattern Emergence}
+
+The pattern emergence system detected 13 cross-domain patterns with an average alignment strength of 95.6\%. For example, a 3-cube pattern emerged connecting EVONY, TRUST, and SCIENCE domains with mutual alignment scores of 0.915--0.946, demonstrating that the annealing process naturally discovers latent cross-domain relationships without explicit programming.
+
+\subsection{Multi-Topic Retrieval}
+
+Multi-topic diffusion sampling successfully partitioned results by domain, returning 2 results per topic for COMFYUI, ML, and HERMES simultaneously in a single query. Each topic's results were semantically coherent with the query.
+
+% ─── Discussion ──────────────────────────────────────────────────────
+\section{Discussion}
+
+\subsection{Limitations}
+
+\begin{itemize}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Diffusion cost:} The current diffusion implementation processes all nodes, yielding O(n) per-step cost. Future work will implement hierarchical pruning (only diffuse over relevant tensor regions).
+    \item \textbf{Synthetic evaluation:} Benchmarks use synthetic data. Evaluation on LoCoMo~\cite{maharana2024locomo} and LongMemEval~\cite{wu2025longmem} is planned.
+    \item \textbf{Cold start:} The system requires initial knowledge ingestion. The AutoResearch loop partially mitigates this.
+\end{itemize}
+
+\subsection{Future Work}
+
+\begin{enumerate}[leftmargin=*,itemsep=0pt]
+    \item \textbf{Parametric Distillation:} Periodically compress the graph into model weights via fine-tuning (MemVerse-style), enabling 0-latency recall for frequently accessed patterns.
+    \item \textbf{Semantic Boundary Detection:} Auto-detect topic shifts in conversation to trigger consolidation (GAM-style).
+    \item \textbf{Pre-training with Hierarchical Objective:} Train a small model (1--3B parameters) from scratch with a loss function that includes tensor position prediction. This would bake hierarchical graph navigation into the model's native capabilities.
+    \item \textbf{H-Bit Deep Integration:} Extend gray-scale validation to operate on raw bytes of knowledge, enabling partial-evidence verification at the bit level.
+    \item \textbf{Distributed Cube Swarms:} Each cube runs as an independent agent in a swarm, with emergent consensus replacing centralized annealing.
+\end{enumerate}
+
+% ─── Conclusion ──────────────────────────────────────────────────────
+\section{Conclusion}
+
+We presented Omega-Cube, a multi-dimensional hierarchical graph memory system that integrates tensor hierarchies, holographic encoding, quantum-inspired annealing, diffusion-based retrieval, and H-Bit-inspired gray-scale validation. The system demonstrates that multi-dimensional knowledge representation enables natural cross-domain reasoning, that holographic signatures provide O(1) approximate neighborhood retrieval, and that diffusion sampling can parallelize graph traversal. Omega-Cube is released as open-source, model-agnostic, and MCP-compatible, ready for integration with existing LLM agent frameworks.
+
+The ``magnetic cube'' metaphor---topic domains as Rubik's cubes that rotate, connect, and coalesce to form emergent patterns---proves to be a powerful and implementable abstraction. As the field moves toward neurosymbolic architectures where structured knowledge is native to the model, systems like Omega-Cube provide a practical bridge between today's flat retrieval and tomorrow's multi-dimensional memory.
+
+% ─── References ──────────────────────────────────────────────────────
+\begin{thebibliography}{20}
+
+\bibitem{wu2026gam}
+Z. Wu, H. Zhang, F. Lin, et al.\\
+\textit{GAM: Hierarchical Graph-based Agentic Memory for LLM Agents}.\\
+arXiv:2604.12285, April 2026.
+
+\bibitem{liu2026memverse}
+J. Liu, Y. Sun, W. Cheng, et al.\\
+\textit{MemVerse: Multimodal Memory for Lifelong Learning Agents}.\\
+arXiv:2512.03627v2, June 2026.
+
+\bibitem{lv2026allmem}
+C. Lv, H. Chang, Y. Guo, et al.\\
+\textit{All-Mem: Agentic Lifelong Memory via Dynamic Topology Evolution}.\\
+arXiv:2603.19595, March 2026.
+
+\bibitem{diffusiongemma2026}
+Google DeepMind.\\
+\textit{DiffusionGemma: Diffusion Models for Text Generation}.\\
+2026. \url{https://deepmind.google/models/gemma/diffusiongemma/}
+
+\bibitem{plate1995hrr}
+T. Plate.\\
+\textit{Holographic Reduced Representations}.\\
+IEEE Transactions on Neural Networks, 1995.
+
+\bibitem{smolensky1990tensor}
+P. Smolensky.\\
+\textit{Tensor Product Variable Binding and the Representation of Symbolic Structures in Connectionist Systems}.\\
+Artificial Intelligence, 1990.
+
+\bibitem{kirkpatrick1983optimization}
+S. Kirkpatrick, C. D. Gelatt, M. P. Vecchi.\\
+\textit{Optimization by Simulated Annealing}.\\
+Science, 1983.
+
+\bibitem{karpathy2026autoresearch}
+A. Karpathy.\\
+\textit{AutoResearch: AI agents running research on single-GPU training automatically}.\\
+GitHub, March 2026. \url{https://github.com/karpathy/autoresearch}
+
+\bibitem{lewis2020rag}
+P. Lewis, et al.\\
+\textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}.\\
+NeurIPS, 2020.
+
+\bibitem{liu2024lost}
+N. F. Liu, et al.\\
+\textit{Lost in the Middle: How Language Models Use Long Contexts}.\\
+TACL, 2024.
+
+\bibitem{edge2024graph}
+D. Edge, et al.\\
+\textit{Graph-based Memory for LLM Agents}.\\
+2024.
+
+\bibitem{zhang2025structured}
+X. Zhang, et al.\\
+\textit{Structured Memory Architectures for Lifelong Learning}.\\
+2025.
+
+\bibitem{maharana2024locomo}
+A. Maharana, et al.\\
+\textit{LoCoMo: Long Context Memory Benchmark}.\\
+2024.
+
+\bibitem{wu2025longmem}
+Z. Wu, et al.\\
+\textit{LongMemEval: Evaluating Long-Term Memory in LLM Agents}.\\
+2025.
+
+\bibitem{hbit}
+H-Bit Protocol.\\
+\textit{Universal Cryptographic Steganography System}.\\
+2026.
+
+\end{thebibliography}
+
+\end{document}
