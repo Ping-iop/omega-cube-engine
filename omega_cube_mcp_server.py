@@ -16,10 +16,14 @@ Tools:
 """
 
 import sys
+import os
 from pathlib import Path
 
-# Add project root
-sys.path.insert(0, str(Path(__file__).parent))
+# Ensure omega_cube package is importable regardless of launch directory
+_SCRIPT_DIR = Path(__file__).parent.resolve()
+_PROJECT_ROOT = _SCRIPT_DIR.parent  # axioma-omega-protocol/
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from omega_cube import OmegaCubeEngine
 from mcp.server.fastmcp import FastMCP
