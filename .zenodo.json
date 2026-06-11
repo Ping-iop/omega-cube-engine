@@ -1,0 +1,28 @@
+{
+  "creators": [
+    {
+      "name": "Omega-Cube Research",
+      "affiliation": "Independent"
+    }
+  ],
+  "title": "Omega-Cube: A Multi-Dimensional Hierarchical Graph Memory System with Holographic Encoding, Quantum-Inspired Annealing, and Diffusion-Based Retrieval",
+  "description": "Omega-Cube is a multi-dimensional hierarchical graph memory engine integrating tensor hierarchies, holographic encoding, quantum-inspired annealing, diffusion graph sampling, and gray-scale validation for LLM agents. Includes full Python implementation (2,500+ lines), LaTeX paper, benchmarks, and comprehensive roadmap.",
+  "license": "MIT",
+  "upload_type": "software",
+  "keywords": [
+    "hierarchical-graph-memory",
+    "multi-dimensional-knowledge",
+    "holographic-encoding",
+    "diffusion-retrieval",
+    "llm-agents",
+    "neurosymbolic-ai",
+    "tensor-hierarchies",
+    "quantum-annealing",
+    "gray-scale-validation",
+    "h-bit"
+  ],
+  "access_right": "open",
+  "language": "eng",
+  "version": "1.0.0",
+  "publication_date": "2026-06-11"
+}
