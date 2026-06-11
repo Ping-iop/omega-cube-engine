@@ -11,7 +11,7 @@
 
 ## 📄 Paper
 
-Read the full paper: [omega_cube_paper.pdf](paper/omega_cube_paper.pdf)
+Read the full paper: [omega_cube_paper.pdf](omega_cube_paper.pdf) | [LaTeX source](paper.tex)
 
 **Omega-Cube: A Multi-Dimensional Hierarchical Graph Memory System**  
 *Omega-Cube Research, June 2026*
