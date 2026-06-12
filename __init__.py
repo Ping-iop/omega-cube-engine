@@ -29,6 +29,7 @@ from .diffusion_sampler import DiffusionGraphSampler
 from .grayscale import GrayScaleValidator
 from .autoresearch import AutoResearchLoop
 from .predictive_search import PredictiveContextSearch, HierarchicalTrie, ContextTracker
+from .collective_evolution import CollectiveHierarchyEngine, SessionSignalExtractor, SessionSignals
 
 __version__ = "1.0.0"
 __author__ = "Omega-Cube Research"
@@ -46,4 +47,7 @@ __all__ = [
     "PredictiveContextSearch",
     "HierarchicalTrie",
     "ContextTracker",
+    "CollectiveHierarchyEngine",
+    "SessionSignalExtractor",
+    "SessionSignals",
 ]
