@@ -30,6 +30,7 @@ from .grayscale import GrayScaleValidator
 from .autoresearch import AutoResearchLoop
 from .predictive_search import PredictiveContextSearch, HierarchicalTrie, ContextTracker
 from .collective_evolution import CollectiveHierarchyEngine, SessionSignalExtractor, SessionSignals
+from .probabilistic_hierarchy import ProbabilisticHierarchyEngine, ProbabilisticNode
 
 __version__ = "1.0.0"
 __author__ = "Omega-Cube Research"
@@ -50,4 +51,6 @@ __all__ = [
     "CollectiveHierarchyEngine",
     "SessionSignalExtractor",
     "SessionSignals",
+    "ProbabilisticHierarchyEngine",
+    "ProbabilisticNode",
 ]
