@@ -218,8 +218,8 @@ Tools exposed:
 
 ## 📊 Comparison with Related Work
 
-| Feature | GAM (Apr '26) | All-Mem (Mar '26) | MemVerse (Jun '26) | **Omega-Cube** |
-|---|---|---|---|---|---|
+| Feature | GAM (Apr '26) | All-Mem (Mar '26) | MemVerse (Jun '26) | Omega-Cube |
+|---|---:|---:|---:|---:|
 | Hierarchical Graph | ✅ | ✅ | ✅ | ✅ |
 | Dynamic Topology | ❌ | ✅ SPLIT/MERGE | ❌ | ✅ Annealing |
 | Multi-Dimensional | ❌ | ❌ | ❌ | ✅ Tensor |
@@ -227,7 +227,9 @@ Tools exposed:
 | Diffusion Retrieval | ❌ | ❌ | ❌ | ✅ |
 | Multi-Bit Verification | ❌ | ❌ | ❌ | ✅ H-Bit |
 | Auto-Optimization | ❌ | ❌ | ❌ | ✅ AutoResearch |
-| **Predictive Context Search** | ❌ | ❌ | ❌ | **✅ 100% vs 50% flat** |
+| Predictive Context Search | ❌ | ❌ | ❌ | ✅ 100% vs 50% flat |
+| Collective Hierarchy Evolution | ❌ | ❌ | ❌ | ✅ 1,064 signals |
+| Probabilistic Hierarchy | ❌ | ❌ | ❌ | ✅ 4-layer Bayesian |
 | Model-Agnostic | ✅ | ✅ | ✅ | ✅ |
 
 ---
