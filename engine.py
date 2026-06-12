@@ -1,12 +1,17 @@
 """
 Omega-Cube Engine — Unified multi-dimensional graph memory system.
 
-Integrates five innovations:
-1. Tensor Hierarchies — nodes in N-dimensional hierarchy space
-2. Holographic Encoding — compressed neighborhood signatures
-3. Quantum-Inspired Annealing — dynamic topology optimization
-4. Diffusion Graph Sampling — non-autoregressive parallel retrieval
-5. Gray-Scale Validation — multi-bit truth assessment (H-Bit inspired)
+Integrates ten innovations:
+1. Tensor Hierarchies
+2. Holographic Encoding
+3. Quantum-Inspired Annealing
+4. Diffusion Graph Sampling
+5. Gray-Scale Validation
+6. AutoResearch Loop
+7. Predictive Context Search
+8. Collective Hierarchy Evolution
+9. Probabilistic Hierarchy Engine
+10. MARP Router — Model-Agnostic Routing Protocol
 
 The engine organizes knowledge as "magnetic cubes" — topic domains with
 internal hierarchies that rotate, connect, and coalesce to form patterns
