@@ -23,11 +23,12 @@ Materiales para conectar con Unsloth, investigadores, y la comunidad open-source
 > 📄 Paper: https://github.com/Ping-iop/omega-cube-engine/blob/master/omega_cube_paper.pdf
 > 
 > Un par de números:
-> - 2,500 líneas de Python, cero dependencias
-> - Retrieval holográfico: 1.8ms (constante, no escala con nodos)
-> - 5 dominios, 27-200 nodos en benchmarks
-> - MCP server para integración plug-and-play con cualquier agente
-> - AutoResearch loop para self-optimization (inspirado en AutoResearch de Karpathy)
+- 2,500 líneas de Python, cero dependencias
+- Retrieval holográfico: 1.8ms (constante, no escala con nodos)
+- **Predictive Context Search: 100% accuracy vs 50% flat (2.0x)**
+- **Collective Hierarchy: 1,064 señales de 27 sesiones reales procesadas**
+- **Probabilistic Hierarchy: 4 capas Bayesian, axiomas resisten 1,000 ataques (0 shift)**
+- 5 dominios, 9 componentes arquitectónicos
 > 
 > Lo que imagino: sus agentes con RL + Omega-Cube como backend de memoria. Ustedes tienen el expertise en training y los GPUs. Yo tengo la arquitectura de memoria. Si hay sinergia, me encantaría explorarla.
 > 
