@@ -28,7 +28,7 @@ REM 2. Worker Qwen 27B Omni (tarda ~30s en cargar)
 echo [MARP] Starting Worker Qwen 27B Omni on :8082...
 start "MARP-Worker" /B "%LLAMA_DIR%\llama-server.exe" ^
     -m "%MODELS_DIR%\Qwen3.6-27B-Omni-v4-Q4_K_M.gguf" ^
-    -ngl 99 -c 4096 --port 8082 --host 127.0.0.1 --mlock ^
+    -ngl 99 -c 4096 --port 8082 --host 127.0.0.1 --mlock --reasoning-format none ^
     > "%LOG_DIR%\worker.log" 2>&1
 
 REM Esperar a que el worker esté listo
