@@ -28,6 +28,7 @@ from .annealer import QuantumInspiredAnnealer, CubeRotator, PatternEmergence
 from .diffusion_sampler import DiffusionGraphSampler
 from .grayscale import GrayScaleValidator
 from .autoresearch import AutoResearchLoop
+from .predictive_search import PredictiveContextSearch, HierarchicalTrie, ContextTracker
 
 __version__ = "1.0.0"
 __author__ = "Omega-Cube Research"
@@ -42,4 +43,7 @@ __all__ = [
     "DiffusionGraphSampler",
     "GrayScaleValidator",
     "AutoResearchLoop",
+    "PredictiveContextSearch",
+    "HierarchicalTrie",
+    "ContextTracker",
 ]
