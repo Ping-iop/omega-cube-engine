@@ -1,0 +1,19 @@
+{
+  "rigorous_benchmark": {
+    "composite_score": 0.42145804944705767,
+    "accuracy": 0.07142857142857142,
+    "engine_stats": {
+      "total_nodes": 30,
+      "axioms": 3,
+      "concepts": 16,
+      "instances": 0,
+      "sessions": 11,
+      "avg_dimensions_per_node": 2.8,
+      "holographic_dim": 256,
+      "query_count": 28,
+      "avg_retrieval_time_ms": 24.9,
+      "memory_dir": "C:\\Users\\GPAMD\\.hermes\\axioma-omega-protocol\\memory"
+    },
+    "timestamp": "2026-06-11T19:08:23"
+  }
+}
