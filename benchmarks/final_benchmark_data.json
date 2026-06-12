@@ -1,0 +1,138 @@
+[
+  {
+    "name": "MARP Router",
+    "metric": "avg_latency_ms",
+    "value": 0.079,
+    "unit": "ms",
+    "trials": 100,
+    "source": "LOCAL"
+  },
+  {
+    "name": "MARP Router",
+    "metric": "p50_latency_ms",
+    "value": 0.062,
+    "unit": "ms",
+    "trials": 100,
+    "source": "LOCAL"
+  },
+  {
+    "name": "MARP Router",
+    "metric": "p99_latency_ms",
+    "value": 1.237,
+    "unit": "ms",
+    "trials": 100,
+    "source": "LOCAL"
+  },
+  {
+    "name": "MARP Router",
+    "metric": "queries_per_sec",
+    "value": 12626.0,
+    "unit": "q/s",
+    "trials": 100,
+    "source": "LOCAL"
+  },
+  {
+    "name": "MARP Router",
+    "metric": "domain_accuracy_25q",
+    "value": 0.36,
+    "unit": "ratio",
+    "trials": 25,
+    "source": "LOCAL"
+  },
+  {
+    "name": "MARP Router",
+    "metric": "avg_token_savings",
+    "value": 0.622,
+    "unit": "ratio",
+    "trials": 25,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "full_confidence",
+    "value": 0.983,
+    "unit": "ratio",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "full_tiles",
+    "value": 331.0,
+    "unit": "tiles",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "analysis_time_ms",
+    "value": 707.6,
+    "unit": "ms",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_25pct_conf",
+    "value": 0.983,
+    "unit": "ratio",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_25pct_tiles",
+    "value": 82.0,
+    "unit": "tiles",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_12pct_conf",
+    "value": 0.983,
+    "unit": "ratio",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_12pct_tiles",
+    "value": 39.0,
+    "unit": "tiles",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_6pct_conf",
+    "value": 0.983,
+    "unit": "ratio",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_6pct_tiles",
+    "value": 19.0,
+    "unit": "tiles",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_3pct_conf",
+    "value": 0.983,
+    "unit": "ratio",
+    "trials": 1,
+    "source": "LOCAL"
+  },
+  {
+    "name": "H-Bit Spectrum",
+    "metric": "crop_3pct_tiles",
+    "value": 9.0,
+    "unit": "tiles",
+    "trials": 1,
+    "source": "LOCAL"
+  }
+]
