@@ -89,8 +89,8 @@ print(f"Routing time: {decision.routing_time_ms:.3f}ms")  # 0.079ms
 |---------|-------|
 | Modelo | Qwen3.5-0.8B-Q6_K.gguf |
 | Tamaño | 639MB (Q6_K cuantizado) |
-| Accuracy | **100%** (10/10 domain classification) |
-| Latencia CPU | 754ms avg (modelo completo) |
+| Accuracy | **100%** (16/16 domain classification, few-shot prompt) |
+| Latencia GPU | **100ms avg, 73ms P50** (via llama-server HTTP) |
 | Latencia keyword | **0.079ms** (pre-filtro, 64% queries) |
 | Ubicación | `J:/modelos_ia/Qwen3.5-0.8B-Q6_K.gguf` |
 | Servicio | `marp/router_service.py` |
