@@ -1,0 +1,500 @@
+[
+  {
+    "scale": 100,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 5.524873733520508,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.75,
+        "flat_time_ms": 0.7524490356445312,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.2,
+        "cube_time_ms": 6.005048751831055,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 6.343603134155273,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.5,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.1,
+        "cube_time_ms": 6.520986557006836,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 5.51915168762207,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 1.0,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.2,
+        "cube_time_ms": 7.019519805908203,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.5,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.8,
+        "cube_time_ms": 5.515098571777344,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.5,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.18571428571428572,
+      "flat_avg_precision": 0.6071428571428571,
+      "cube_avg_time_ms": 6.064040320260184,
+      "flat_avg_time_ms": 0.10749271937779017,
+      "cube_noise_ratio": 0.17142857142857143,
+      "flat_noise_ratio": 0.0
+    }
+  },
+  {
+    "scale": 500,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 28.583049774169922,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.3333333333333333,
+        "flat_time_ms": 0.7698535919189453,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 28.575420379638672,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 0.5049705505371094,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 27.53925323486328,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.5,
+        "flat_time_ms": 1.5091896057128906,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 28.086423873901367,
+        "cube_noise_ratio": 0.5,
+        "flat_precision": 0.4,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 29.574155807495117,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0,
+        "flat_time_ms": 0.0,
+        "flat_noise_ratio": 0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 29.29997444152832,
+        "cube_noise_ratio": 0.0,
+        "flat_precision": 0.7,
+        "flat_time_ms": 1.0001659393310547,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.8,
+        "cube_time_ms": 28.577804565429688,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.3,
+        "flat_time_ms": 0.9984970092773438,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.1142857142857143,
+      "flat_avg_precision": 0.46190476190476193,
+      "cube_avg_time_ms": 28.605154582432338,
+      "flat_avg_time_ms": 0.6832395281110492,
+      "cube_noise_ratio": 0.24285714285714288,
+      "flat_noise_ratio": 0.0
+    }
+  },
+  {
+    "scale": 1000,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 55.51958084106445,
+        "cube_noise_ratio": 0.5,
+        "flat_precision": 0.6,
+        "flat_time_ms": 1.0001659393310547,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 55.64308166503906,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 1.0,
+        "flat_time_ms": 0.9999275207519531,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 55.81092834472656,
+        "cube_noise_ratio": 0.6,
+        "flat_precision": 0.6,
+        "flat_time_ms": 0.812530517578125,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.1,
+        "cube_time_ms": 54.82316017150879,
+        "cube_noise_ratio": 0.4,
+        "flat_precision": 0.9,
+        "flat_time_ms": 0.9980201721191406,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.1,
+        "cube_time_ms": 55.77969551086426,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.8,
+        "flat_time_ms": 1.0001659393310547,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 57.346343994140625,
+        "cube_noise_ratio": 0.5,
+        "flat_precision": 0.5,
+        "flat_time_ms": 1.0628700256347656,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.9,
+        "cube_time_ms": 54.76808547973633,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.6,
+        "flat_time_ms": 1.0044574737548828,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.15714285714285717,
+      "flat_avg_precision": 0.7142857142857143,
+      "cube_avg_time_ms": 55.67012514386858,
+      "flat_avg_time_ms": 0.982591084071568,
+      "cube_noise_ratio": 0.37142857142857144,
+      "flat_noise_ratio": 0.0
+    }
+  },
+  {
+    "scale": 2000,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.81025886535645,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.3,
+        "flat_time_ms": 2.647876739501953,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.17535018920898,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 2.009153366088867,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.56254196166992,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 1.0,
+        "flat_time_ms": 1.7750263214111328,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.64789581298828,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.4,
+        "flat_time_ms": 1.5141963958740234,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.8338623046875,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.4,
+        "flat_time_ms": 1.8260478973388672,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 107.06233978271484,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.7,
+        "flat_time_ms": 2.009153366088867,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.7,
+        "cube_time_ms": 107.44762420654297,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.4,
+        "flat_time_ms": 2.0935535430908203,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.09999999999999999,
+      "flat_avg_precision": 0.6,
+      "cube_avg_time_ms": 107.5056961604527,
+      "flat_avg_time_ms": 1.9821439470563615,
+      "cube_noise_ratio": 0.22857142857142856,
+      "flat_noise_ratio": 0.0
+    }
+  },
+  {
+    "scale": 5000,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 261.9619369506836,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 0.8,
+        "flat_time_ms": 5.038022994995117,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 262.71772384643555,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 4.970788955688477,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 283.6325168609619,
+        "cube_noise_ratio": 0.4,
+        "flat_precision": 1.0,
+        "flat_time_ms": 6.370067596435547,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 301.56922340393066,
+        "cube_noise_ratio": 0.4,
+        "flat_precision": 0.9,
+        "flat_time_ms": 4.999399185180664,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.1,
+        "cube_time_ms": 279.5143127441406,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.6,
+        "flat_time_ms": 5.013465881347656,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 320.7550048828125,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 6.000280380249023,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.9,
+        "cube_time_ms": 309.558629989624,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.4,
+        "flat_time_ms": 6.604671478271484,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.14285714285714285,
+      "flat_avg_precision": 0.8142857142857143,
+      "cube_avg_time_ms": 288.52990695408414,
+      "flat_avg_time_ms": 5.570956638881138,
+      "cube_noise_ratio": 0.2571428571428572,
+      "flat_noise_ratio": 0.0
+    }
+  },
+  {
+    "scale": 10000,
+    "queries": [
+      {
+        "query": "SDXL checkpoint location and size",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 634.9968910217285,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 1.0,
+        "flat_time_ms": 12.021303176879883,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Marcian PvP attack bonus against mounted",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 625.8783340454102,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 1.0,
+        "flat_time_ms": 11.537790298461914,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit gray levels per bit segment number",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 578.9480209350586,
+        "cube_noise_ratio": 0.4,
+        "flat_precision": 1.0,
+        "flat_time_ms": 11.023998260498047,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Hermes MCP server configuration path",
+        "type": "single-hop",
+        "cube_precision": 0.0,
+        "cube_time_ms": 598.1152057647705,
+        "cube_noise_ratio": 0.2,
+        "flat_precision": 0.9,
+        "flat_time_ms": 11.017560958862305,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "SDXL vs Hermes: storage path comparison",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 623.3499050140381,
+        "cube_noise_ratio": 0.1,
+        "flat_precision": 0.5,
+        "flat_time_ms": 11.525630950927734,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "Evony F2P general acquisition + Hermes c",
+        "type": "cross-domain",
+        "cube_precision": 0.0,
+        "cube_time_ms": 734.9667549133301,
+        "cube_noise_ratio": 0.3,
+        "flat_precision": 1.0,
+        "flat_time_ms": 11.528730392456055,
+        "flat_noise_ratio": 0.0
+      },
+      {
+        "query": "H-Bit verification rate + ComfyUI model ",
+        "type": "cross-domain",
+        "cube_precision": 0.6,
+        "cube_time_ms": 594.3746566772461,
+        "cube_noise_ratio": 0.4,
+        "flat_precision": 0.4,
+        "flat_time_ms": 12.522459030151367,
+        "flat_noise_ratio": 0.0
+      }
+    ],
+    "summary": {
+      "cube_avg_precision": 0.08571428571428572,
+      "flat_avg_precision": 0.8285714285714286,
+      "cube_avg_time_ms": 627.2328240530832,
+      "flat_avg_time_ms": 11.596781866891044,
+      "cube_noise_ratio": 0.27142857142857146,
+      "flat_noise_ratio": 0.0
+    }
+  }
+]
