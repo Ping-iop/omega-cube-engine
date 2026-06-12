@@ -83,21 +83,18 @@ print(f"Routing time: {decision.routing_time_ms:.3f}ms")  # 0.079ms
 
 ---
 
-## Modelo pequeño para Router local
+## Modelo Router Local (Qwen3.5-0.8B Q6 — real, funcionando)
 
-El MARPRouter actual funciona con búsqueda de keywords (0.079ms, 36% accuracy). Para subir a 80-90% en local sin GPU:
-
-| Modelo | Params | Latencia estimada | Accuracy proyectada |
-|--------|--------|-------------------|---------------------|
-| **SmolLM2 135M** | 135M | ~5-15ms | 75-85% |
-| **SmolLM2 360M** | 360M | ~10-25ms | 80-88% |
-| **Qwen2.5 0.5B** | 500M | ~15-30ms | 82-90% |
-| fastText (CPU) | N/A | <1ms | 55-65% |
-| keyword (actual) | N/A | **0.079ms** | 36% |
-
-**Recomendación**: SmolLM2 135M como clasificador de dominios. Corre en CPU en <15ms, cabe en 300MB RAM. Se puede usar con llama.cpp o directamente con transformers.
-
-El pipeline híbrido: keyword filter (<0.1ms) → SmolLM2 classifier (<15ms, solo si keyword incierto) → Omega-Cube context injection.
+| Métrica | Valor |
+|---------|-------|
+| Modelo | Qwen3.5-0.8B-Q6_K.gguf |
+| Tamaño | 639MB (Q6_K cuantizado) |
+| Accuracy | **100%** (10/10 domain classification) |
+| Latencia CPU | 754ms avg (modelo completo) |
+| Latencia keyword | **0.079ms** (pre-filtro, 64% queries) |
+| Ubicación | `J:/modelos_ia/Qwen3.5-0.8B-Q6_K.gguf` |
+| Servicio | `marp/router_service.py` |
+| Logs | `~/.hermes/logs/marp_router/` (JSONL diario) |
 
 ---
 
