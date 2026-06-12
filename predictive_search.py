@@ -94,7 +94,7 @@ class HierarchicalTrie:
             node = node.children[char]
         
         # Collect all completions with domain info
-        completions = self._collect_completions(node, prefix_lower, depth=0, max_depth=50)
+        completions = self._collect_completions(node, prefix_lower, depth=0, max_depth=100)
         
         # Score by contextual relevance
         scored = []
@@ -152,32 +152,40 @@ class HierarchicalTrie:
         return results
     
     def _contextual_score(self, completion: dict, context_domain: str, node: TrieNode) -> float:
-        """Score a completion based on contextual relevance."""
+        """Score a completion based on contextual relevance with strong context weighting."""
         score = 0.0
+        domains = completion.get("domains", {})
         
-        # Base: frequency score
-        if node.total_hits > 0:
-            score += completion.get("total_hits", 0) / node.total_hits
+        if not domains:
+            return 0.01
         
-        # Context boost: domain matches active context
-        if context_domain and completion.get("domains"):
-            domains = completion["domains"]
-            total_domain_hits = sum(domains.values())
-            if total_domain_hits > 0:
-                context_hits = domains.get(context_domain, 0)
-                # Strong boost if this completion appears in active domain
-                context_ratio = context_hits / total_domain_hits
-                score += context_ratio * 2.0  # 2x multiplier for context match
+        total_domain_hits = sum(domains.values())
+        if total_domain_hits == 0:
+            return 0.01
         
-        # Penalize purely noise domains
-        if completion.get("domains"):
-            domains = completion["domains"]
-            has_real_domain = any(
-                d not in ("NOISE", "DISTRACTOR", "UNKNOWN")
-                for d in domains
+        # Base: normalized frequency (proportion of all domain hits)
+        max_hits = max(domains.values()) if domains else 1
+        score += max_hits / total_domain_hits * 0.5
+        
+        # Context boost: domain matches active context → 5x multiplier
+        if context_domain and context_domain in domains:
+            context_hits = domains[context_domain]
+            context_ratio = context_hits / total_domain_hits
+            # Strong boost: if this completion is PRIMARILY from the active domain
+            if context_ratio > 0.5:
+                score += 3.0  # Heavy boost for primary domain match
+            else:
+                score += context_ratio * 2.0
+        
+        # Penalize completions that are PRIMARILY from other domains
+        if context_domain:
+            other_domain_hits = sum(
+                h for d, h in domains.items() 
+                if d != context_domain
             )
-            if not has_real_domain:
-                score *= 0.1  # Heavy penalty for noise
+            other_ratio = other_domain_hits / total_domain_hits
+            if other_ratio > 0.8:
+                score *= 0.1  # Heavy penalty for mostly wrong domain
         
         return score
     
@@ -281,7 +289,7 @@ class PredictiveContextSearch:
         
         # Also index individual significant words for faster partial matching
         words = text.lower().split()
-        significant = [w for w in words if len(w) > 3 and w.isalpha()]
+        significant = [w.strip(':,.;!?()[]{}"\'') for w in words if len(w.strip(':,.;!?()[]{}"\'')) > 2]
         for word in significant:
             self.trie.insert(word, domain, node_id)
     
@@ -331,14 +339,30 @@ class PredictiveContextSearch:
             self.context.observe(domain)
     
     def _detect_domain(self, text: str) -> Optional[str]:
-        """Quick domain detection from text."""
+        """Quick domain detection from text. Prioritizes domain name matches."""
         text_lower = text.lower()
+        
+        # Priority 1: exact domain name in text
+        all_domains = ["COMFYUI", "EVONY", "HERMES", "HBIT", "ML", 
+                       "MEDICAL", "FINANCE", "LEGAL", "PHYSICS", "MUSIC",
+                       "PYTHON", "OMEGA", "SECURITY", "PHARM"]
+        for domain in all_domains:
+            if domain.lower() in text_lower:
+                return domain
+        
+        # Priority 2: domain-specific keywords
         domain_keywords = {
-            "COMFYUI": ["comfyui", "sdxl", "checkpoint", "vae", "lora", "workflow", "ipadapter"],
-            "EVONY": ["evony", "marcian", "hermes", "akechi", "tamar", "f2p", "pvp", "ranged"],
-            "HERMES": ["hermes", "mcp", "cron", "skill", "plugin", "config", "agent"],
-            "HBIT": ["h-bit", "hbit", "grayscale", "steganograph", "verify", "security"],
-            "ML": ["diffusion", "gemma", "karpathy", "training", "fine-tuning", "embedding"],
+            "COMFYUI": ["comfyui", "sdxl", "checkpoint", "vae", "lora", "workflow", "ipadapter", "upscale", "inpaint"],
+            "EVONY": ["evony", "marcian", "hermes", "akechi", "tamar", "f2p", "pvp", "ranged", "mounted", "siege", "rally"],
+            "HERMES": ["hermes agent", "mcp server", "cron job", "skill pack", "state.db", "hermes config"],
+            "HBIT": ["h-bit", "hbit", "grayscale", "steganograph", "verify", "bit chain"],
+            "MEDICAL": ["diagnosis", "prognosis", "symptom", "pathology", "surgery", "therapy", "vaccine", "patient", "clinical", "tumor", "cardiac"],
+            "FINANCE": ["portfolio", "dividend", "bond", "equity", "derivative", "forex", "crypto", "audit", "capital", "asset"],
+            "LEGAL": ["contract", "tort", "statute", "plaintiff", "defendant", "verdict", "appeal", "patent", "copyright", "jurisdiction"],
+            "ML": ["diffusion", "transformer", "embedding", "fine-tuning", "gradient", "backprop", "inference", "tokenizer"],
+            "PHYSICS": ["quantum", "relativity", "gravity", "electromagnetic", "particle", "entropy"],
+            "MUSIC": ["melody", "harmony", "rhythm", "tempo", "symphony", "concerto", "jazz", "blues"],
+            "PHARM": ["contrast", "corticosteroid", "prednisone", "gadolinium", "imaging", "pharm"],
         }
         for domain, keywords in domain_keywords.items():
             if any(kw in text_lower for kw in keywords):
