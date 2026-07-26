@@ -24,6 +24,7 @@ from omega_cube.marp.router import MARPRouter, STANDARD_DOMAINS
 from omega_cube.marp.scheduler import ShardScheduler, AdaptiveScheduler
 from omega_cube.marp.protocol import ShardConfig, MARPMode
 from omega_cube.engine_v2 import OmegaCubeEngineV2
+from omega_cube.telemetry import Telemetry
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -244,6 +245,10 @@ def run_benchmark():
     print(f"   Latencia avg: {v1_avg_ms:.3f}ms | P95: {v1_p95_ms:.3f}ms")
     print(f"   Context nodes avg: {v1_context_avg:.1f}")
 
+    # ── Telemetry ──
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "logs")
+    telemetry = Telemetry(log_dir=log_dir, session_id=f"marp_bench_{time.strftime('%Y%m%d_%H%M%S')}")
+
     # ── v2 Router (con engine) ──
     print("\n[3/6] Benchmarking MARP v2 (con Axion-Cube engine)...")
     router_v2 = MARPRouter(engine=engine)
@@ -283,6 +288,20 @@ def run_benchmark():
                 for cn in decision.ticket.context_nodes
             ),
         })
+
+        # Telemetry: log every routing decision
+        telemetry.log_routing(
+            query=query,
+            predicted_domain=predicted,
+            latency_ms=elapsed,
+            confidence=decision.ticket.confidence.get(predicted, 0),
+            expected_domain=expected_domain,
+            correct=correct,
+            hierarchical=decision.hierarchical_routing_used,
+            context_nodes=len(decision.ticket.context_nodes),
+            boundary_filtered=decision.boundary_filtered,
+            bias_detected=decision.ticket.bias_detected,
+        )
 
     v2_accuracy = v2_correct / len(TEST_QUERIES) * 100
     v2_avg_ms = sum(v2_times) / len(v2_times)
@@ -473,6 +492,44 @@ def run_benchmark():
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
     print(f"💾 Report saved: {report_path}")
+
+    # ── Telemetry: efficiency report + problem detection ──
+    print("\n" + "=" * 70)
+    print("📊 TELEMETRÍA: Reporte de Eficiencia")
+    print("=" * 70)
+
+    eff_report = telemetry.efficiency_report()
+    problems = telemetry.detect_problems()
+    telemetry.flush()
+
+    health = eff_report.get("health_score", {})
+    routing_eff = eff_report.get("routing_efficiency", {})
+    latency = eff_report.get("latency", {})
+
+    print(f"""
+🏥 Health Score: {health.get('total', 0)}/100 (Grade: {health.get('grade', '?')})
+   Breakdown: {health.get('breakdown', {})}
+
+📈 Routing Efficiency:
+   Accuracy: {routing_eff.get('accuracy_pct', 0)}%
+   Hierarchical: {routing_eff.get('hierarchical_pct', 0)}%
+   Avg context nodes: {routing_eff.get('avg_context_nodes', 0)}
+   Bias detections: {routing_eff.get('bias_detections', 0)}
+
+⏱  Latency:
+   Avg: {latency.get('avg_ms', 0)}ms | P95: {latency.get('p95_ms', 0)}ms | Max: {latency.get('max_ms', 0)}ms
+
+📁 Logs: {telemetry.log_dir}
+""")
+
+    if problems:
+        print(f"⚠️  PROBLEMAS DETECTADOS ({len(problems)}):")
+        for p in problems:
+            icon = {"critical": "🔴", "warning": "🟡", "info": "🔵"}.get(p["severity"], "⚪")
+            print(f"   {icon} [{p['severity'].upper()}] {p['type']}: {p['message']}")
+            print(f"      → {p['suggestion']}")
+    else:
+        print("✅ Sin problemas detectados")
 
     print("\n" + "=" * 70)
     print("✅ MARP Benchmark completo")

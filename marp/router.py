@@ -38,6 +38,20 @@ from omega_cube.marp.protocol import (
 from omega_cube.predictive_search import PredictiveContextSearch
 from omega_cube.tensor_node import TensorNode
 
+# Stopwords for keyword evolution (content extraction)
+_STOPWORDS = frozenset({
+    "about", "above", "after", "again", "against", "all", "also", "because",
+    "been", "before", "being", "below", "between", "both", "but", "can",
+    "cannot", "could", "does", "doing", "down", "during", "each", "few",
+    "for", "from", "further", "had", "has", "have", "having", "here",
+    "how", "into", "its", "itself", "just", "more", "most", "other",
+    "out", "over", "own", "same", "should", "some", "such", "than",
+    "that", "the", "their", "theirs", "them", "then", "there", "these",
+    "they", "this", "those", "through", "too", "under", "until", "very",
+    "was", "were", "what", "when", "where", "which", "while", "who",
+    "whom", "why", "will", "with", "would", "your", "yours",
+})
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Domain taxonomy (knowledge domains for model sharding)
@@ -518,35 +532,48 @@ class MARPRouter:
         """Extract keywords from graph nodes to evolve domain classification.
 
         Inspired by CORTEX (arXiv 2607.18821): ontology auto-evolution.
-        Scans graph nodes for tags and frequent terms, adds them to
-        domain keyword lists so the router evolves with the knowledge base.
+        Scans graph nodes for tags, content terms, and hierarchy paths.
+        Adds them to domain keyword lists so the router evolves with the graph.
         """
         if not self._engine:
             return
         try:
             for domain, info in STANDARD_DOMAINS.items():
                 domain_upper = domain.upper()
-                # Find nodes belonging to this domain
-                domain_nodes = [
-                    n for n in self._engine.nodes.values()
-                    if hasattr(n, 'primary_hierarchy')
-                    and n.primary_hierarchy
-                    and n.primary_hierarchy.upper().startswith(domain_upper)
-                ]
+                # Find nodes belonging to this domain (check all hierarchies)
+                domain_nodes = []
+                for n in self._engine.nodes.values():
+                    hierarchies = getattr(n, 'hierarchies', [])
+                    if not hierarchies:
+                        continue
+                    for h in hierarchies:
+                        if h.upper().startswith(domain_upper):
+                            domain_nodes.append(n)
+                            break
+
                 if not domain_nodes:
                     continue
-                # Extract tags
+
+                # Extract keywords from tags AND content
                 new_keywords = set()
                 for n in domain_nodes:
+                    # From tags
                     if hasattr(n, 'tags') and n.tags:
                         for tag in n.tags:
                             tag_lower = tag.lower().strip()
                             if len(tag_lower) >= 3 and tag_lower not in info["keywords"]:
                                 new_keywords.add(tag_lower)
-                # Add to keyword index (max 20 new per domain to avoid bloat)
+                    # From content: extract significant words (len >= 4, not stopwords)
+                    if hasattr(n, 'content') and n.content:
+                        words = re.findall(r'\b[a-z]{4,}\b', n.content.lower())
+                        for w in words:
+                            if w not in _STOPWORDS and w not in info["keywords"]:
+                                new_keywords.add(w)
+
+                # Add to keyword index (max 30 new per domain to avoid bloat)
                 added = 0
                 for kw in sorted(new_keywords):
-                    if added >= 20:
+                    if added >= 30:
                         break
                     info["keywords"].append(kw)
                     self._kw_to_domain.setdefault(kw, []).append(domain)
