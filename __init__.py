@@ -22,6 +22,7 @@ Usage:
 """
 
 from .engine import OmegaCubeEngine
+from .engine_v2 import OmegaCubeEngineV2
 from .tensor_node import TensorNode, TensorIndex
 from .holographic import HolographicEncoder
 from .annealer import QuantumInspiredAnnealer, CubeRotator, PatternEmergence
@@ -32,10 +33,11 @@ from .predictive_search import PredictiveContextSearch, HierarchicalTrie, Contex
 from .collective_evolution import CollectiveHierarchyEngine, SessionSignalExtractor, SessionSignals
 from .probabilistic_hierarchy import ProbabilisticHierarchyEngine, ProbabilisticNode
 
-__version__ = "1.0.0"
-__author__ = "Omega-Cube Research"
+__version__ = "2.0.0"
+__author__ = "Axion Research"
 __all__ = [
     "OmegaCubeEngine",
+    "OmegaCubeEngineV2",
     "TensorNode",
     "TensorIndex",
     "HolographicEncoder",

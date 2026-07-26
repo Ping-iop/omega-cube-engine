@@ -1,20 +1,22 @@
 """
-MARP Router — Omega-Cube native query-to-domain classifier.
+MARP Router — Axion-Cube native query-to-domain classifier.
 
-Component #10 of Omega-Cube Engine. Uses the existing hierarchical
-knowledge graph (PredictiveContextSearch, TensorNode, HolographicEncoder)
-to classify queries into domains and build structured DomainTickets.
+Component #10 of Axion-Cube Engine. Uses the existing hierarchical
+knowledge graph (HierarchicalSummarizer, TensorNode, HolographicEncoder,
+BoundaryController, HallucinationDetector) to classify queries into
+domains and build structured DomainTickets.
 
 This is the "clerk" in the restaurant metaphor. It NEVER generates text.
 It only classifies, enriches context, and routes to model shards.
 
-Key integration points:
-- PredictiveContextSearch: finds relevant nodes in O(k) via prefix trie
-- TensorNode: scores nodes across N dimensions (domain, depth, format, audience)
-- HolographicEncoder: O(1) similarity search across graph
-- GrayScaleValidator: confidence scoring for retrieved context
+v2 improvements (2026-07-26, from arXiv 2026 papers):
+1. HierarchicalSummarizer routing: O(log n) coarse-to-fine (H²MT)
+2. BoundaryController grounding: filters ungrounded context (PAGE-RAG)
+3. HallucinationDetector: detects domain classification bias (2607.00447)
+4. Holographic context nodes: 256D embeddings in ContextNode
+5. Evolving keywords: extracted from graph, not hardcoded (CORTEX)
 
-Latency target: <5ms (Omega-Cube native) vs 0.25ms (keyword fallback)
+Latency target: <5ms (Axion-Cube native) vs 0.25ms (keyword fallback)
 Accuracy target: 90%+ (vs 40% keyword-only)
 """
 
@@ -103,7 +105,7 @@ STANDARD_DOMAINS = {
 @dataclass
 class DomainScore:
     domain: str
-    omega_score: float      # from Omega-Cube graph search
+    omega_score: float      # from Axion-Cube graph search
     keyword_score: float    # from keyword matching
     tensor_score: float     # from TensorNode N-dim scoring
     combined: float
@@ -112,24 +114,41 @@ class DomainScore:
 
 
 class MARPRouter:
-    """Omega-Cube native router: query → domain classification + context.
+    """Axion-Cube native router: query → domain classification + context.
 
-    Now a first-class Omega-Cube component. Uses:
-    - PredictiveContextSearch for O(k) domain lookup
-    - TensorNode for N-dimensional scoring (domain × depth × format × audience)
-    - HolographicEncoder for similarity search (when available)
+    v2: Now uses HierarchicalSummarizer for O(log n) routing,
+    BoundaryController for grounded context, and HallucinationDetector
+    for bias detection in domain classification.
 
     This replaces the standalone MARP router. All routing flows through
-    Omega-Cube's knowledge graph — no external dependencies.
+    Axion-Cube's knowledge graph — no external dependencies.
     """
 
     def __init__(
         self,
         predictive_search: Optional[PredictiveContextSearch] = None,
+        engine=None,  # OmegaCubeEngineV2 instance
     ):
         self._predictive = predictive_search or PredictiveContextSearch()
+        self._engine = engine
+        self._summarizer = None
+        self._boundary = None
+        self._hallucination_detector = None
         self._init_domain_index()
         self._init_patterns()
+        self._keyword_refresh_count = 0
+        self._keyword_refresh_interval = 50  # refresh every N queries
+
+    def _ensure_v2_components(self):
+        """Lazy-init v2 components from engine."""
+        if self._engine is None:
+            return
+        if self._summarizer is None and hasattr(self._engine, 'summarizer'):
+            self._summarizer = self._engine.summarizer
+        if self._boundary is None and hasattr(self._engine, 'boundary'):
+            self._boundary = self._engine.boundary
+        if self._hallucination_detector is None and hasattr(self._engine, 'hallucination_detector'):
+            self._hallucination_detector = self._engine.hallucination_detector
 
     def _init_domain_index(self):
         self._kw_to_domain: dict[str, list[str]] = {}
@@ -145,7 +164,7 @@ class MARPRouter:
             "basic": [r"\bwhat is\b", r"\bdefine\b", r"\bbeginner\b", r"\bsimple\b"],
             "intermediate": [r"\bhow (?:does|to|can)\b", r"\bexplain\b", r"\bcompare\b"],
             "advanced": [r"\bprove\b", r"\bderive\b", r"\bimplement\b", r"\bdesign\b"],
-            "expert": [r"\bresearch\b", r"\bnovel\b", r"\bst...art\b", r"\bpaper\b"],
+            "expert": [r"\bresearch\b", r"\bnovel\b", r"\bstate.of.the.art\b", r"\bpaper\b"],
         }
         self._format_map = {
             "code": [r"\bcode\b", r"\bfunction\b", r"\bimplement\b", r"\bscript\b"],
@@ -165,28 +184,54 @@ class MARPRouter:
         conversation_history: list[str] | None = None,
     ) -> RouterDecision:
         t0 = time.perf_counter()
+        self._ensure_v2_components()
 
-        # 1. Omega-Cube predictive search for domain nodes
+        # 1. Axion-Cube hierarchical search for domain nodes (v2: O(log n))
         omega_scores = self._omega_search(query)
-        
+
         # 2. Keyword scoring as fallback/boost
         kw_scores = self._keyword_score(query)
 
-        # 3. Combine Omega-Cube + keyword scores
+        # 3. Combine Axion-Cube + keyword scores
         domain_scores = self._combine_scores(omega_scores, kw_scores, query)
 
-        # 4. Detect depth, format, audience
+        # 4. v2: Detect and counteract domain classification bias
+        bias_detected = False
+        bias_type = "none"
+        bias_counteracted = False
+        if self._hallucination_detector and domain_scores:
+            bias_dicts = [
+                {"domain": ds.domain, "score": ds.combined}
+                for ds in domain_scores
+            ]
+            bias = self._hallucination_detector.detect_bias(query, bias_dicts)
+            if bias["bias_type"] != "none":
+                bias_detected = True
+                bias_type = bias["bias_type"]
+                counteracted = self._hallucination_detector.counteract(
+                    query, bias_dicts, bias
+                )
+                if counteracted:
+                    bias_counteracted = True
+                    # Re-sort domain scores after counteraction
+                    score_map = {d["domain"]: d["score"] for d in counteracted}
+                    for ds in domain_scores:
+                        if ds.domain in score_map:
+                            ds.combined = score_map[ds.domain]
+                    domain_scores.sort(key=lambda x: x.combined, reverse=True)
+
+        # 5. Detect depth, format, audience
         depth = self._detect(query, self._depth_map, "intermediate")
         fmt = self._detect(query, self._format_map, "explanation")
         audience = self._detect_audience(query)
 
-        # 5. Match domains to shards
+        # 6. Match domains to shards
         active_names, reasons = self._match_shards(domain_scores, available_shards)
 
-        # 6. Build context from Omega-Cube nodes
-        context = self._build_context(query, domain_scores)
+        # 7. v2: Build grounded context from Axion-Cube nodes
+        context, boundary_filtered = self._build_context(query, domain_scores)
 
-        # 7. Build ticket
+        # 8. Build ticket
         ticket = DomainTicket(
             query=query,
             active_domains=[s.domain for s in domain_scores[:3]],
@@ -196,10 +241,19 @@ class MARPRouter:
             format=fmt,
             audience=audience,
             conversation_history=conversation_history or [],
+            bias_detected=bias_detected,
+            bias_type=bias_type,
+            bias_counteracted=bias_counteracted,
         )
 
         savings = self._estimate_savings(len(active_names), len(available_shards))
         routing_time = (time.perf_counter() - t0) * 1000
+
+        # v2: Periodic keyword evolution from graph
+        self._keyword_refresh_count += 1
+        if self._keyword_refresh_count >= self._keyword_refresh_interval:
+            self._refresh_keywords_from_graph()
+            self._keyword_refresh_count = 0
 
         return RouterDecision(
             ticket=ticket,
@@ -209,24 +263,54 @@ class MARPRouter:
             omega_cube_nodes_used=len(context),
             routing_time_ms=routing_time,
             token_savings_estimate=savings,
+            hierarchical_routing_used=self._summarizer is not None,
+            boundary_filtered=boundary_filtered,
+            bias_detections=1 if bias_detected else 0,
         )
 
     # ══════════════════════════════════════════════════════════════
-    # Omega-Cube graph search
+    # Axion-Cube graph search (v2: hierarchical)
     # ══════════════════════════════════════════════════════════════
 
     def _omega_search(self, query: str) -> dict[str, float]:
-        """Search Omega-Cube knowledge graph for domain-relevant nodes."""
+        """Search Axion-Cube knowledge graph for domain-relevant nodes.
+
+        v2: Uses HierarchicalSummarizer.route_coarse_to_fine() for O(log n)
+        routing when engine is available. Falls back to PredictiveContextSearch.
+        """
         scores: dict[str, float] = {}
+
+        # v2: Hierarchical routing via Axion-Cube summarizer
+        if self._summarizer and self._engine:
+            try:
+                nodes = self._engine.nodes
+                tree = self._engine.hierarchy_tree
+                if nodes and tree:
+                    results = self._summarizer.route_coarse_to_fine(
+                        query, nodes, tree, top_k=10
+                    )
+                    for node, sim in results:
+                        # Extract domain from primary_hierarchy
+                        domain = ""
+                        if hasattr(node, 'primary_hierarchy') and node.primary_hierarchy:
+                            domain = node.primary_hierarchy.split(".")[0].lower()
+                        elif hasattr(node, 'hierarchies') and node.hierarchies:
+                            domain = node.hierarchies[0].split(".")[0].lower()
+                        if domain:
+                            scores[domain] = max(scores.get(domain, 0.0), sim)
+                    if scores:
+                        return scores
+            except Exception:
+                pass
+
+        # Fallback: PredictiveContextSearch (v1 behavior)
         query_lower = query.lower()
         words = re.findall(r'\b\w{3,}\b', query_lower)
 
-        # Use PredictiveContextSearch if nodes are indexed
         for word in words:
             try:
                 results = self._predictive.predict(word, top_k=3)
                 for node_id, node_weight in results:
-                    # Extract domain from node_id or content
                     for domain in STANDARD_DOMAINS:
                         if domain in node_id.lower():
                             scores[domain] = max(
@@ -263,7 +347,7 @@ class MARPRouter:
         kw: dict[str, tuple[float, list[str]]],
         query: str,
     ) -> list[DomainScore]:
-        """Combine Omega-Cube semantic scores with keyword scores."""
+        """Combine Axion-Cube semantic scores with keyword scores."""
         results = []
         max_kw = max((s for s, _ in kw.values()), default=1.0)
         all_domains = set(omega.keys()) | set(kw.keys())
@@ -272,10 +356,10 @@ class MARPRouter:
             oc = omega.get(domain, 0.0)
             kw_score, matched = kw.get(domain, (0.0, []))
             kw_norm = min(kw_score / max(max_kw, 1), 1.0)
-            
-            # Omega-Cube weight: 0.6, keyword: 0.4
+
+            # Axion-Cube weight: 0.6, keyword: 0.4
             combined = 0.6 * oc + 0.4 * kw_norm if oc > 0 else kw_norm
-            
+
             if combined > 0.08:
                 results.append(DomainScore(
                     domain=domain,
@@ -333,7 +417,7 @@ class MARPRouter:
                     active.append(s.name)
                     matched.add(s.name)
                     reasons[s.name] = (
-                        f"Omega-Cube: {ds.omega_score:.2f}, "
+                        f"Axion-Cube: {ds.omega_score:.2f}, "
                         f"KW: {ds.keyword_score:.2f} → {ds.combined:.2f}"
                     )
 
@@ -345,28 +429,130 @@ class MARPRouter:
         return active, reasons
 
     # ══════════════════════════════════════════════════════════════
-    # Context building from Omega-Cube
+    # Context building from Axion-Cube (v2: grounded + holographic)
     # ══════════════════════════════════════════════════════════════
 
     def _build_context(
         self, query: str, domain_scores: list[DomainScore]
-    ) -> list[ContextNode]:
-        nodes = []
-        for ds in domain_scores[:3]:
-            if ds.combined < 0.2:
-                continue
-            info = STANDARD_DOMAINS.get(ds.domain, {})
-            subs = info.get("subdomains", [])
-            if subs:
-                nodes.append(ContextNode(
-                    node_id=f"omega:{ds.domain}",
-                    content=f"Domain: {ds.domain}. Subdomains: {', '.join(subs[:5])}.",
-                    weight=ds.combined,
-                    domain=ds.domain,
-                    depth=1,
-                    dimensions=[ds.domain, "knowledge_graph"],
-                ))
-        return nodes
+    ) -> tuple[list[ContextNode], int]:
+        """Build context from real Axion-Cube graph nodes.
+
+        v2: Queries the actual graph for relevant nodes, attaches
+        holographic signatures and grounding scores, then filters
+        through BoundaryController.
+
+        Returns: (context_nodes, boundary_filtered_count)
+        """
+        raw_nodes: list[ContextNode] = []
+        boundary_filtered = 0
+
+        # v2: Query real graph nodes instead of generating generic text
+        if self._engine:
+            for ds in domain_scores[:3]:
+                if ds.combined < 0.2:
+                    continue
+                try:
+                    hits = self._engine.query(
+                        ds.domain, mode="hierarchical", top_k=3
+                    )
+                    for h in hits:
+                        node_id = h.get("node_id", f"axion:{ds.domain}")
+                        content = h.get("content", "")
+                        score = h.get("score", ds.combined)
+                        gray = h.get("gray_scale", 0.0)
+
+                        # Get holographic signature from node
+                        holo_sig = []
+                        if node_id in self._engine.nodes:
+                            node = self._engine.nodes[node_id]
+                            if hasattr(node, 'holographic_signature') and node.holographic_signature:
+                                holo_sig = node.holographic_signature
+
+                        raw_nodes.append(ContextNode(
+                            node_id=node_id,
+                            content=content,
+                            weight=score,
+                            domain=ds.domain,
+                            depth=1,
+                            dimensions=[ds.domain, "knowledge_graph"],
+                            holographic_signature=holo_sig,
+                            grounding_score=score,
+                            gray_scale=gray,
+                        ))
+                except Exception:
+                    pass
+
+        # Fallback: generic domain context (v1 behavior)
+        if not raw_nodes:
+            for ds in domain_scores[:3]:
+                if ds.combined < 0.2:
+                    continue
+                info = STANDARD_DOMAINS.get(ds.domain, {})
+                subs = info.get("subdomains", [])
+                if subs:
+                    raw_nodes.append(ContextNode(
+                        node_id=f"axion:{ds.domain}",
+                        content=f"Domain: {ds.domain}. Subdomains: {', '.join(subs[:5])}.",
+                        weight=ds.combined,
+                        domain=ds.domain,
+                        depth=1,
+                        dimensions=[ds.domain, "knowledge_graph"],
+                    ))
+
+        # v2: Filter through BoundaryController (PAGE-RAG)
+        if self._boundary and raw_nodes:
+            try:
+                grounded = self._boundary.filter_grounded(raw_nodes, query)
+                boundary_filtered = len(raw_nodes) - len(grounded)
+                return grounded, boundary_filtered
+            except Exception:
+                pass
+
+        return raw_nodes, boundary_filtered
+
+    # ══════════════════════════════════════════════════════════════
+    # v2: Evolving keyword rules from graph (CORTEX-inspired)
+    # ══════════════════════════════════════════════════════════════
+
+    def _refresh_keywords_from_graph(self):
+        """Extract keywords from graph nodes to evolve domain classification.
+
+        Inspired by CORTEX (arXiv 2607.18821): ontology auto-evolution.
+        Scans graph nodes for tags and frequent terms, adds them to
+        domain keyword lists so the router evolves with the knowledge base.
+        """
+        if not self._engine:
+            return
+        try:
+            for domain, info in STANDARD_DOMAINS.items():
+                domain_upper = domain.upper()
+                # Find nodes belonging to this domain
+                domain_nodes = [
+                    n for n in self._engine.nodes.values()
+                    if hasattr(n, 'primary_hierarchy')
+                    and n.primary_hierarchy
+                    and n.primary_hierarchy.upper().startswith(domain_upper)
+                ]
+                if not domain_nodes:
+                    continue
+                # Extract tags
+                new_keywords = set()
+                for n in domain_nodes:
+                    if hasattr(n, 'tags') and n.tags:
+                        for tag in n.tags:
+                            tag_lower = tag.lower().strip()
+                            if len(tag_lower) >= 3 and tag_lower not in info["keywords"]:
+                                new_keywords.add(tag_lower)
+                # Add to keyword index (max 20 new per domain to avoid bloat)
+                added = 0
+                for kw in sorted(new_keywords):
+                    if added >= 20:
+                        break
+                    info["keywords"].append(kw)
+                    self._kw_to_domain.setdefault(kw, []).append(domain)
+                    added += 1
+        except Exception:
+            pass
 
     @staticmethod
     def _estimate_savings(active: int, total: int) -> float:

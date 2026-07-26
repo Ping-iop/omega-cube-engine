@@ -1,15 +1,18 @@
 """
-MARP — Model-Agnostic Routing Protocol (Omega-Cube Component #10).
+MARP — Model-Agnostic Routing Protocol (Axion-Cube Component #10).
 
-Dynamic hierarchical model loading using Omega-Cube's knowledge graph.
+Dynamic hierarchical model loading using Axion-Cube's knowledge graph.
 Routes queries to domain-specific model shards instead of loading entire models.
 
+v2 (2026-07-26): Added AdaptiveScheduler with session-based domain learning,
+holographic context nodes, boundary control, and hallucination detection.
+
 Usage:
-    from omega_cube.marp import MARPRouter, ShardScheduler
+    from omega_cube.marp import MARPRouter, AdaptiveScheduler
     from omega_cube.marp.protocol import ShardConfig
 
-    router = MARPRouter()
-    scheduler = ShardScheduler()
+    router = MARPRouter(engine=axion_cube_engine)  # v2: pass engine for hierarchical routing
+    scheduler = AdaptiveScheduler()
     scheduler.register(ShardConfig(name="math_v1", domains=["math"], ...))
     
     decision = router.route("Explain entropy", [...])
@@ -21,10 +24,10 @@ from omega_cube.marp.protocol import (
     RouterDecision, MARPMode,
 )
 from omega_cube.marp.router import MARPRouter, DomainScore
-from omega_cube.marp.scheduler import ShardScheduler, SchedulerStats
+from omega_cube.marp.scheduler import ShardScheduler, AdaptiveScheduler, SchedulerStats
 
 __all__ = [
-    "MARPRouter", "ShardScheduler",
+    "MARPRouter", "ShardScheduler", "AdaptiveScheduler",
     "DomainTicket", "ContextNode", "ShardConfig", "ShardActivation",
     "RouterDecision", "MARPMode",
     "DomainScore", "SchedulerStats",

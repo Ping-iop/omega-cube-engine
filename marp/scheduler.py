@@ -1,15 +1,19 @@
 """
-MARP Scheduler — GPU-native shard activation for Omega-Cube Engine.
+MARP Scheduler — GPU-native shard activation for Axion-Cube Engine.
 
 Manages model shard lifecycle in GPU unified memory. All shards reside
 in VRAM; activation means allowing compute kernels to run, not moving data.
 
 This is the "kitchen manager" in the restaurant metaphor.
+
+v2 (2026-07-26): Added AdaptiveScheduler with session-based domain
+frequency learning for smarter prefetch predictions.
 """
 
 from __future__ import annotations
 
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -28,6 +32,9 @@ class SchedulerStats:
     prefetch_hits: int = 0
     prefetch_misses: int = 0
     uptime_seconds: float = 0.0
+    # v2 additions
+    adaptive_predictions: int = 0
+    adaptive_correct: int = 0
 
 
 class ShardScheduler:
@@ -120,3 +127,65 @@ class ShardScheduler:
             lru.is_active = False
             self._stats.active_shards -= 1
             self._stats.idle_shards += 1
+
+
+class AdaptiveScheduler(ShardScheduler):
+    """v2: Scheduler that learns domain usage patterns per session.
+
+    Tracks domain frequency over a sliding window and uses it to
+    predict which shards to prefetch next. Replaces static prefetch
+    with data-driven predictions.
+
+    Improvement #5 from MARP review (2026-07-26).
+    """
+
+    def __init__(self, max_gpu_memory_mb: int = 0, window_size: int = 20):
+        super().__init__(max_gpu_memory_mb)
+        self._domain_history: list[str] = []
+        self._window_size = window_size
+        self._last_predicted: list[str] = []
+
+    def activate_for_decision(self, decision: RouterDecision) -> list[ShardActivation]:
+        # Record domains for learning
+        self._domain_history.extend(decision.ticket.active_domains)
+        # Keep sliding window
+        if len(self._domain_history) > self._window_size * 3:
+            self._domain_history = self._domain_history[-self._window_size * 2:]
+
+        # Check if previous prediction was correct
+        if self._last_predicted:
+            actual = set(decision.ticket.active_domains)
+            predicted = set(self._last_predicted)
+            if actual & predicted:
+                self._stats.adaptive_correct += 1
+            self._stats.adaptive_predictions += 1
+
+        # Adaptive prefetch based on learned patterns
+        predicted = self._predict_next_domains()
+        self._last_predicted = predicted
+        if predicted:
+            self.prefetch(predicted, max_n=2)
+
+        return super().activate_for_decision(decision)
+
+    def _predict_next_domains(self) -> list[str]:
+        """Predict next domains from frequency in recent window."""
+        if len(self._domain_history) < 3:
+            return []
+        recent = Counter(self._domain_history[-self._window_size:])
+        # Return top-2 most frequent domains (excluding the most recent)
+        last_domain = self._domain_history[-1] if self._domain_history else None
+        predictions = []
+        for domain, count in recent.most_common(4):
+            if domain != last_domain and count >= 2:
+                predictions.append(domain)
+            if len(predictions) >= 2:
+                break
+        return predictions
+
+    @property
+    def prediction_accuracy(self) -> float:
+        """Accuracy of adaptive prefetch predictions."""
+        if self._stats.adaptive_predictions == 0:
+            return 0.0
+        return self._stats.adaptive_correct / self._stats.adaptive_predictions

@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "date": "2026-07-26",
+    "nodes_v1": 96,
+    "nodes_v2": 97,
+    "queries": 20,
+    "domains": 5
+  },
+  "retrieval_v1": {
+    "diffusion": {
+      "precision_at_5": 0.2,
+      "precision_at_10": 0.16,
+      "avg_time_ms": 1921.74,
+      "p50_time_ms": 1945.82,
+      "p95_time_ms": 2198.51,
+      "avg_gray_score": 51.49
+    },
+    "holographic": {
+      "precision_at_5": 0.13,
+      "precision_at_10": 0.12,
+      "avg_time_ms": 7.43,
+      "p50_time_ms": 7.02,
+      "p95_time_ms": 10.61,
+      "avg_gray_score": 42.58
+    },
+    "tensor": {
+      "precision_at_5": 0.13,
+      "precision_at_10": 0.12,
+      "avg_time_ms": 8.25,
+      "p50_time_ms": 8.52,
+      "p95_time_ms": 11.52,
+      "avg_gray_score": 42.58
+    },
+    "combined": {
+      "precision_at_5": 0.15,
+      "precision_at_10": 0.1,
+      "avg_time_ms": 1932.7,
+      "p50_time_ms": 1931.73,
+      "p95_time_ms": 2076.38,
+      "avg_gray_score": 48.75
+    }
+  },
+  "retrieval_v2": {
+    "hierarchical": {
+      "precision_at_5": 0.06,
+      "precision_at_10": 0.07,
+      "avg_time_ms": 2.61,
+      "p50_time_ms": 2.13,
+      "p95_time_ms": 10.91,
+      "avg_gray_score": 42.61
+    },
+    "diffusion": {
+      "precision_at_5": 0.2,
+      "precision_at_10": 0.18,
+      "avg_time_ms": 1896.36,
+      "p50_time_ms": 1908.06,
+      "p95_time_ms": 1967.54,
+      "avg_gray_score": 51.32
+    },
+    "holographic": {
+      "precision_at_5": 0.1,
+      "precision_at_10": 0.135,
+      "avg_time_ms": 7.48,
+      "p50_time_ms": 7.03,
+      "p95_time_ms": 9.53,
+      "avg_gray_score": 42.62
+    },
+    "combined": {
+      "precision_at_5": 0.18,
+      "precision_at_10": 0.14,
+      "avg_time_ms": 1907.2,
+      "p50_time_ms": 1903.07,
+      "p95_time_ms": 2008.18,
+      "avg_gray_score": 46.95
+    }
+  },
+  "scaling_v1": {
+    "scaling_data": [
+      {
+        "nodes": 10,
+        "avg_ms": 10.85
+      },
+      {
+        "nodes": 25,
+        "avg_ms": 52.84
+      },
+      {
+        "nodes": 50,
+        "avg_ms": 289.09
+      },
+      {
+        "nodes": 75,
+        "avg_ms": 951.69
+      },
+      {
+        "nodes": 96,
+        "avg_ms": 1891.35
+      }
+    ],
+    "estimated_complexity": "O(n log n) or worse"
+  },
+  "scaling_v2": {
+    "scaling_data": [
+      {
+        "nodes": 10,
+        "avg_ms": 9.3
+      },
+      {
+        "nodes": 25,
+        "avg_ms": 52.3
+      },
+      {
+        "nodes": 50,
+        "avg_ms": 296.31
+      },
+      {
+        "nodes": 75,
+        "avg_ms": 941.95
+      },
+      {
+        "nodes": 96,
+        "avg_ms": 1902.27
+      }
+    ],
+    "estimated_complexity": "O(n log n) or worse"
+  },
+  "typed_schema": {
+    "blocked": 2,
+    "passed": 2,
+    "block_rate": 0.5
+  },
+  "boundary_control": {
+    "total_results": 20,
+    "abstained": 0
+  },
+  "hallucination_detection": {
+    "detections": 3
+  },
+  "engine_v2_stats": {
+    "total_nodes": 97,
+    "axioms": 10,
+    "concepts": 86,
+    "instances": 0,
+    "sessions": 1,
+    "summaries": 0,
+    "avg_dimensions_per_node": 2.3,
+    "holographic_dim": 256,
+    "query_count": 110,
+    "avg_retrieval_time_ms": 839.33,
+    "invalid_ops_blocked": 52,
+    "abstained_results": 0,
+    "bias_detections": 3,
+    "hierarchy_levels": 67
+  }
+}

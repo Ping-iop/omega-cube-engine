@@ -1,6 +1,6 @@
-# Omega-Cube Engine v1.5
+# Axion-Cube Engine v2.0
 
-**10-Component Hierarchical Memory + Model Routing System**
+**14-Component Hierarchical Memory + Model Routing System**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-green)](https://python.org)
@@ -9,49 +9,50 @@
 
 ---
 
-## What is Omega-Cube?
+## What is Axion-Cube?
 
-Omega-Cube is a **multi-dimensional hierarchical graph memory system** that now also routes queries to the right model shards (MARP — Component #10). 10 innovations in one engine.
+Axion-Cube is the **knowledge engine** of the AXION protocol (AXiomatic ONtological engine).
+A multi-dimensional hierarchical graph memory system that stores, searches, verifies,
+and routes knowledge. 14 innovations in one engine (10 original + 4 from arXiv 2026).
 
 | # | Component | Innovation |
 |---|-----------|------------|
 | 1 | **TensorNode** | N-dimensional simultaneous hierarchies |
-| 2 | **HolographicEncoder** | O(1) circular convolution search (3.7ms) |
+| 2 | **HolographicEncoder** | O(1) circular convolution search (256D) |
 | 3 | **QuantumAnnealer** | Dynamic topology optimization |
 | 4 | **DiffusionSampler** | Parallel non-autoregressive retrieval |
 | 5 | **GrayScaleValidator** | Multi-bit truth (6 dimensions, H-Bit) |
 | 6 | **AutoResearchLoop** | Self-optimizing weekly pipeline |
-| 7 | **PredictiveContextSearch** | Domain-aware prefix trie (100% ctx accuracy) |
+| 7 | **PredictiveContextSearch** | Domain-aware prefix trie |
 | 8 | **CollectiveHierarchy** | Session-driven graph evolution |
 | 9 | **ProbabilisticHierarchy** | 4-layer Bayesian anchoring |
 | 10 | **MARPRouter** | Model-Agnostic Routing Protocol |
+| 11 | **HierarchicalSummarizer** | H²MT coarse-to-fine O(log n) routing |
+| 12 | **TypedSchema** | VirtualSet pre-execution validation |
+| 13 | **BoundaryController** | PAGE-RAG grounding filter |
+| 14 | **HallucinationDetector** | Inference misalignment bias detection |
 
-## MARP: Model-Agnostic Routing Protocol (NEW v1.5)
+## MARP v2: Model-Agnostic Routing Protocol
 
-**The problem**: Dense models load all parameters for every query. MoE models still load 17-49B active params. Both waste 30-50% of tokens on system/context.
+**6 improvements applied (2026-07-26):**
 
-**MARP's solution**: Omega-Cube's knowledge graph routes queries to domain-specific model shards. Only 3-8B params active per query. Zero context token waste.
+1. **Hierarchical routing** — O(log n) via HierarchicalSummarizer (H²MT)
+2. **Grounded context** — BoundaryController filters ungrounded nodes (PAGE-RAG)
+3. **Bias detection** — HallucinationDetector in domain classification
+4. **Holographic context nodes** — 256D embeddings in every ContextNode
+5. **AdaptiveScheduler** — Session-based domain frequency learning
+6. **Evolving keywords** — Graph-driven keyword extraction (CORTEX)
 
-### Real Benchmarks (locally executed + externally verified)
+### Benchmarks (real data, 2026-07-26)
 
-| Metric | Dense (Llama3.3 70B) | MoE (DeepSeek V4) | **MARP+Omega-Cube** |
-|--------|----------------------|-------------------|---------------------|
-| Active params | 70B | 49B | **3-8B** |
-| GPU minimum | H100 80GB | 2x H100 | **RTX 3090 24GB** |
-| Router latency | N/A | <1ms (learned gate) | **0.079ms** (graph) |
-| Router throughput | N/A | N/A | **12,626 q/sec** |
-| Domain accuracy | N/A | ~85%* | 36% kw / **90%+ projected** |
-| Token savings | 0% | ~5-15% | **62.2%** |
-| Context waste | 30-50% | 30-50% | **0%** (Omega-Cube) |
-| Model agnostic | No | No | **YES** |
-
-*\*MoE gate collapse documented in literature (Shazeer 2017, Fedus 2022)*
-
-### Sources
-- **Spheron** Mar 2026: vLLM/TRT-LLM/SGLang on H100 (Llama 3.3 70B FP8)
-- **DigitalOcean** May 2026: 7 MoE models active/total ratios
-- **Signal65** Dec 2025: DeepSeek-R1 GB200 NVL72 economics
-- **LOCAL EXECUTION** Jun 2026: MARP Router + H-Bit Spectrum benchmarks
+| Metric | v1 | v2 | Delta |
+|--------|-----|-----|-------|
+| Routing accuracy | 52.5% | **60.0%** | +7.5% |
+| Context nodes/query | 0.6 | **7.3** | 12x |
+| Hierarchical routing | 0% | **100%** | New |
+| Holographic context | 0% | **100%** | New |
+| Adaptive prefetch | 0 hits | **8 hits** | New |
+| Prediction accuracy | N/A | **62.5%** | New |
 
 ---
 
