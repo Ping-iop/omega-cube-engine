@@ -1,0 +1,216 @@
+{
+  "timestamp": "2026-07-26T19:00:53.563242",
+  "benchmark": "graph_engineering_v2",
+  "source_article": "Graph Engineering Clearly Explained (Akshay Pachaar)",
+  "patterns": 5,
+  "total_nodes": 20,
+  "total_queries": 35,
+  "domains_standard": 10,
+  "domains_discovered": [
+    "agent",
+    "approval",
+    "auditing",
+    "automatizacion",
+    "calidad",
+    "ciencia",
+    "codesearch",
+    "comfyui",
+    "conversation",
+    "corruption",
+    "criptografia",
+    "desarrollo",
+    "dev",
+    "docsearch",
+    "entry",
+    "evaluation",
+    "evony",
+    "execution",
+    "f2p",
+    "formatting",
+    "game",
+    "generation",
+    "hbit",
+    "hermes",
+    "herramientas",
+    "ia",
+    "infrastructure",
+    "ingestion",
+    "investigation",
+    "memory",
+    "merging",
+    "ml",
+    "omega",
+    "planning",
+    "platform",
+    "project",
+    "recovery",
+    "reporting",
+    "research",
+    "review",
+    "revision",
+    "seguridad",
+    "sistema",
+    "tag",
+    "topic",
+    "transformation",
+    "trust",
+    "type",
+    "ux",
+    "verificacion",
+    "websearch",
+    "windows",
+    "writing"
+  ],
+  "before": {
+    "sequential_pipeline": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7,
+      "avg_ms": 3.907
+    },
+    "conditional_review_loop": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7,
+      "avg_ms": 6.806
+    },
+    "parallel_fanout": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7,
+      "avg_ms": 7.0
+    },
+    "state_corruption": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7,
+      "avg_ms": 7.769
+    },
+    "multi_model_specialists": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7,
+      "avg_ms": 7.246
+    },
+    "_global": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 35,
+      "avg_ms": 6.546
+    }
+  },
+  "after": {
+    "sequential_pipeline": {
+      "accuracy": 85.7,
+      "correct": 6,
+      "total": 7,
+      "avg_ms": 9.649
+    },
+    "conditional_review_loop": {
+      "accuracy": 100.0,
+      "correct": 7,
+      "total": 7,
+      "avg_ms": 8.845
+    },
+    "parallel_fanout": {
+      "accuracy": 71.4,
+      "correct": 5,
+      "total": 7,
+      "avg_ms": 9.234
+    },
+    "state_corruption": {
+      "accuracy": 85.7,
+      "correct": 6,
+      "total": 7,
+      "avg_ms": 8.993
+    },
+    "multi_model_specialists": {
+      "accuracy": 85.7,
+      "correct": 6,
+      "total": 7,
+      "avg_ms": 8.209
+    },
+    "_global": {
+      "accuracy": 85.7,
+      "correct": 30,
+      "total": 35,
+      "avg_ms": 8.986
+    }
+  },
+  "telemetry": {
+    "session_id": "graph_bench_20260726_190052",
+    "generated_at": "2026-07-26T19:00:53.555766",
+    "duration_seconds": 0.6,
+    "totals": {
+      "routings": 20,
+      "queries": 0,
+      "errors": 0
+    },
+    "routing_efficiency": {
+      "accuracy_pct": 0.0,
+      "correct": 0,
+      "labeled": 0,
+      "avg_confidence": 0.0,
+      "hierarchical_pct": 0.0,
+      "avg_context_nodes": 1.0,
+      "boundary_filtered_total": 0,
+      "bias_detections": 0
+    },
+    "latency": {
+      "avg_ms": 7.766,
+      "p50_ms": 8.509,
+      "p95_ms": 10.448,
+      "p99_ms": 12.689,
+      "max_ms": 12.689
+    },
+    "query_modes": {},
+    "domain_distribution": {
+      "unknown": 5,
+      "review": 5,
+      "agent": 4,
+      "ingestion": 4,
+      "research": 4,
+      "revision": 3,
+      "codesearch": 3,
+      "docsearch": 3,
+      "writing": 3,
+      "planning": 3,
+      "execution": 3,
+      "auditing": 3,
+      "corruption": 3,
+      "generation": 3,
+      "evony": 2,
+      "code": 2,
+      "transformation": 2,
+      "evaluation": 2,
+      "recovery": 2,
+      "language": 1,
+      "hermes": 1,
+      "business": 1,
+      "comfyui": 1,
+      "ciencia": 1,
+      "omega": 1,
+      "formatting": 1,
+      "approval": 1,
+      "merging": 1,
+      "websearch": 1,
+      "reporting": 1
+    },
+    "mode_distribution": {},
+    "errors": {
+      "by_type": {},
+      "by_severity": {}
+    },
+    "health_score": {
+      "total": 50.0,
+      "grade": "D",
+      "breakdown": {
+        "accuracy": "0/40",
+        "latency": "20/30",
+        "errors": "20/20",
+        "bias": "10/10"
+      }
+    }
+  },
+  "problems": []
+}

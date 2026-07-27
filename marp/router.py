@@ -334,13 +334,19 @@ class MARPRouter:
             except Exception:
                 pass
 
-        # Fallback: semantic overlap with domain keywords
+        # Fallback: semantic overlap with domain keywords (standard + learned)
         if not scores:
-            for domain, info in STANDARD_DOMAINS.items():
-                domain_terms = set(info["keywords"])
-                overlap = len(set(words) & domain_terms)
-                if overlap > 0:
-                    scores[domain] = min(0.9, 0.4 + 0.1 * overlap)
+            # Check all indexed keywords, not just STANDARD_DOMAINS
+            for word in words:
+                for domain in self._kw_to_domain.get(word, []):
+                    scores[domain] = max(scores.get(domain, 0.0), 0.5)
+            # Also check STANDARD_DOMAINS for completeness
+            if not scores:
+                for domain, info in STANDARD_DOMAINS.items():
+                    domain_terms = set(info["keywords"])
+                    overlap = len(set(words) & domain_terms)
+                    if overlap > 0:
+                        scores[domain] = min(0.9, 0.4 + 0.1 * overlap)
 
         return scores
 
@@ -532,50 +538,62 @@ class MARPRouter:
         """Extract keywords from graph nodes to evolve domain classification.
 
         Inspired by CORTEX (arXiv 2607.18821): ontology auto-evolution.
-        Scans graph nodes for tags, content terms, and hierarchy paths.
-        Adds them to domain keyword lists so the router evolves with the graph.
+        v3: Discovers NEW domains from node hierarchies (not just STANDARD_DOMAINS).
+        Any hierarchy path like 'devops.kubernetes' registers 'devops' as a domain.
         """
         if not self._engine:
             return
         try:
-            for domain, info in STANDARD_DOMAINS.items():
-                domain_upper = domain.upper()
-                # Find nodes belonging to this domain (check all hierarchies)
-                domain_nodes = []
-                for n in self._engine.nodes.values():
-                    hierarchies = getattr(n, 'hierarchies', [])
-                    if not hierarchies:
-                        continue
-                    for h in hierarchies:
-                        if h.upper().startswith(domain_upper):
-                            domain_nodes.append(n)
-                            break
-
-                if not domain_nodes:
+            # ── Phase 1: Discover ALL domains from node hierarchies ──
+            domain_nodes: dict[str, list] = {}
+            for n in self._engine.nodes.values():
+                hierarchies = getattr(n, 'hierarchies', [])
+                if not hierarchies:
                     continue
+                for h in hierarchies:
+                    # Normalize: support both "a.b" and "a/b" separators
+                    normalized = h.replace("/", ".")
+                    domain = normalized.split(".")[0].lower().strip()
+                    if domain and len(domain) >= 2:
+                        domain_nodes.setdefault(domain, []).append(n)
 
-                # Extract keywords from tags AND content
+            # ── Phase 2: Extract keywords per domain ──
+            for domain, nodes in domain_nodes.items():
+                # Get or create keyword list for this domain
+                if domain in STANDARD_DOMAINS:
+                    existing_kws = set(STANDARD_DOMAINS[domain]["keywords"])
+                else:
+                    existing_kws = set()
+
+                # Collect current keywords already indexed for this domain
+                for kw, domains in self._kw_to_domain.items():
+                    if domain in domains:
+                        existing_kws.add(kw)
+
                 new_keywords = set()
-                for n in domain_nodes:
+                for n in nodes:
                     # From tags
                     if hasattr(n, 'tags') and n.tags:
                         for tag in n.tags:
                             tag_lower = tag.lower().strip()
-                            if len(tag_lower) >= 3 and tag_lower not in info["keywords"]:
+                            if len(tag_lower) >= 3 and tag_lower not in existing_kws:
                                 new_keywords.add(tag_lower)
-                    # From content: extract significant words (len >= 4, not stopwords)
+                    # From content: significant words (len >= 4, not stopwords)
                     if hasattr(n, 'content') and n.content:
                         words = re.findall(r'\b[a-z]{4,}\b', n.content.lower())
                         for w in words:
-                            if w not in _STOPWORDS and w not in info["keywords"]:
+                            if w not in _STOPWORDS and w not in existing_kws:
                                 new_keywords.add(w)
 
-                # Add to keyword index (max 30 new per domain to avoid bloat)
+                # Register domain name itself as a keyword
+                if domain not in existing_kws:
+                    new_keywords.add(domain)
+
+                # Add to keyword index (max 30 new per domain)
                 added = 0
                 for kw in sorted(new_keywords):
                     if added >= 30:
                         break
-                    info["keywords"].append(kw)
                     self._kw_to_domain.setdefault(kw, []).append(domain)
                     added += 1
         except Exception:
