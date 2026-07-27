@@ -351,14 +351,21 @@ class MARPRouter:
         return scores
 
     def _keyword_score(self, query: str) -> dict[str, tuple[float, list[str]]]:
-        """Keyword-based domain scoring (fast pre-filter)."""
+        """Keyword-based domain scoring with IDF-like specificity weighting.
+
+        Keywords exclusive to one domain score 1.0; keywords shared across N
+        domains score 1/N each. This prevents generic terms ('binary', 'model')
+        from drowning out domain-specific signals ('milvus', 'packbits').
+        """
         scores: dict[str, tuple[float, list[str]]] = {}
         words = set(re.findall(r'\b\w+\b', query.lower()))
         for word in words:
             if word in self._kw_to_domain:
-                for domain in self._kw_to_domain[word]:
+                domains_for_word = self._kw_to_domain[word]
+                specificity = 1.0 / len(domains_for_word)  # IDF-like
+                for domain in domains_for_word:
                     prev_score, prev_matches = scores.get(domain, (0.0, []))
-                    scores[domain] = (prev_score + 1.0, prev_matches + [word])
+                    scores[domain] = (prev_score + specificity, prev_matches + [word])
         return scores
 
     def _combine_scores(
