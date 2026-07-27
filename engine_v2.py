@@ -29,6 +29,7 @@ from .holographic import HolographicEncoder
 from .annealer import QuantumInspiredAnnealer, CubeRotator, PatternEmergence
 from .diffusion_sampler import DiffusionGraphSampler
 from .grayscale import GrayScaleValidator
+from .vector_index import HNSWVectorIndex
 
 
 # ── Improvement 1: Typed Ontology Schema (VirtualSet, 2607.18821) ──────
@@ -399,6 +400,14 @@ class OmegaCubeEngineV2:
         self.hierarchy_tree: dict[str, list[str]] = {}
         self.hierarchy_built = False
         
+        # NEW v4: HNSW vector index (Layer 2 — O(log n) ANN search)
+        self.hnsw = HNSWVectorIndex(
+            dimension=holographic_dim,
+            metric="cos",
+            quantization="i8",  # 256 B/vector, 98.9% recall
+        )
+        self._hnsw_dirty = True  # needs rebuild after load
+        
         # Stats
         self.query_count = 0
         self.total_retrieval_time = 0.0
@@ -445,6 +454,10 @@ class OmegaCubeEngineV2:
         
         self.nodes[node.node_id] = node
         self.index.insert(node)
+        
+        # v4: Index in HNSW for O(log n) ANN search
+        if node.holographic_signature:
+            self.hnsw.add(node.node_id, node.holographic_signature)
         
         if node_type == "AXIOM":
             self.axioms.append(node)
@@ -498,20 +511,29 @@ class OmegaCubeEngineV2:
         temperature: float = 0.1,
         apply_boundaries: bool = True,
         detect_hallucination: bool = True,
+        node_filter: set = None,  # v4: Layer 1 shard filter
     ) -> list[dict]:
         """
         Query with Axion improvements:
         - hierarchical: coarse-to-fine routing (H²MT) → O(log n)
         - diffusion: parallel sampling (original)
-        - holographic: signature match (original)
+        - holographic: HNSW ANN search (v4) → O(log n)
         - combined: diffusion + holographic re-ranking (original)
         
         Post-processing:
         - Boundary control (PAGE-RAG): filter ungrounded results
         - Hallucination detection (2607.00447): detect + counteract bias
+        
+        v4 additions:
+        - node_filter: Layer 1 shard partitioning — restrict search to node subset
+        - HNSW index: Layer 2 ANN search replaces linear scan
+        - Multi-signal re-ranking: Layer 3 keyword + depth + tags
         """
         self.query_count += 1
         start = time.time()
+        
+        # Ensure HNSW index is built (lazy, after load)
+        self._ensure_hnsw()
         
         if mode == "hierarchical":
             self._ensure_hierarchy()
@@ -523,7 +545,7 @@ class OmegaCubeEngineV2:
             raw = self.diffusion.sample(query_text, self.index, self.holographic, top_k=top_k, temperature=temperature)
             results = [self._format_result(r) for r in raw]
         elif mode == "holographic":
-            raw = self._query_holographic(query_text, top_k)
+            raw = self._query_holographic(query_text, top_k, node_filter=node_filter)
             results = [self._format_result(r) for r in raw]
         elif mode == "combined":
             raw = self._query_combined(query_text, top_k)
@@ -556,17 +578,117 @@ class OmegaCubeEngineV2:
         
         return results
     
-    # ── Internal query methods (from v1) ──────────────────────────
+    # ── HNSW Index Management (Layer 2) ──────────────────────────
     
-    def _query_holographic(self, query: str, top_k: int) -> list:
-        query_vector = self.holographic.encode_node(query, "QUERY")
-        results = []
-        for node in self.nodes.values():
+    def _ensure_hnsw(self):
+        """Rebuild HNSW index from loaded nodes (lazy, after load)."""
+        if not self._hnsw_dirty:
+            return
+        items = []
+        for nid, node in self.nodes.items():
             if node.holographic_signature:
-                sim = self.holographic.partial_match(query_vector, node.holographic_signature)
-                results.append((node, sim))
-        results.sort(key=lambda x: -x[1])
-        return results[:top_k]
+                items.append((nid, node.holographic_signature))
+        if items:
+            self.hnsw.rebuild(items)
+        self._hnsw_dirty = False
+    
+    # ── Internal query methods (v4: HNSW + multi-signal re-rank) ──
+    
+    def _query_holographic(self, query: str, top_k: int, node_filter: set = None) -> list:
+        """
+        v4: HNSW ANN search (O(log n)) replaces O(n) linear scan.
+        Falls back to linear scan if HNSW unavailable.
+        """
+        query_vector = self.holographic.encode_node(query, "QUERY")
+        
+        if self.hnsw.is_available and self.hnsw.size > 0:
+            # Layer 2: HNSW ANN — fetch more candidates for re-ranking
+            ann_k = min(top_k * 5, self.hnsw.size)
+            ann_results = self.hnsw.search(query_vector, ann_k)
+            
+            # Map back to nodes, apply shard filter if provided
+            results = []
+            for nid, sim in ann_results:
+                if node_filter and nid not in node_filter:
+                    continue
+                node = self.nodes.get(nid)
+                if node:
+                    results.append((node, sim))
+            
+            # Layer 3: Multi-signal re-ranking
+            results = self._multisignal_rerank(query, results, top_k)
+            return results[:top_k]
+        else:
+            # Fallback: linear scan (original v1 behavior)
+            results = []
+            for node in self.nodes.values():
+                if node_filter and node.node_id not in node_filter:
+                    continue
+                if node.holographic_signature:
+                    sim = self.holographic.partial_match(query_vector, node.holographic_signature)
+                    results.append((node, sim))
+            results.sort(key=lambda x: -x[1])
+            return results[:top_k]
+    
+    def _multisignal_rerank(
+        self, query: str, candidates: list[tuple], top_k: int
+    ) -> list[tuple]:
+        """
+        Layer 3: Multi-signal re-ranking.
+        
+        Combines 4 signals on the candidate set (not full N):
+          1. Holographic similarity (from HNSW)     — weight 0.40
+          2. Keyword overlap with query              — weight 0.25
+          3. Hierarchy depth specificity             — weight 0.15
+          4. Tag relevance                           — weight 0.20
+        
+        Operates on ~50 candidates, not N. Cost is O(k) where k << N.
+        """
+        if not candidates:
+            return candidates
+        
+        query_words = set(query.lower().split())
+        query_words = {w for w in query_words if len(w) > 2}
+        
+        scored = []
+        for node, holo_sim in candidates:
+            # Signal 1: Holographic similarity (already computed)
+            s_holo = holo_sim
+            
+            # Signal 2: Keyword overlap
+            content_words = set(node.content.lower().split())
+            content_words = {w for w in content_words if len(w) > 2}
+            if query_words:
+                overlap = len(query_words & content_words) / len(query_words)
+            else:
+                overlap = 0.0
+            s_keyword = min(overlap, 1.0)
+            
+            # Signal 3: Hierarchy depth (deeper = more specific = more relevant)
+            depth = node.primary_hierarchy.count(".") if node.primary_hierarchy else 0
+            s_depth = min(depth / 4.0, 1.0)  # normalize: 4+ levels = max
+            
+            # Signal 4: Tag relevance
+            if node.tags and query_words:
+                tag_words = set()
+                for t in node.tags:
+                    tag_words.update(t.lower().split())
+                tag_overlap = len(query_words & tag_words) / len(query_words)
+                s_tags = min(tag_overlap, 1.0)
+            else:
+                s_tags = 0.0
+            
+            # Weighted combination
+            combined = (
+                0.40 * s_holo +
+                0.25 * s_keyword +
+                0.15 * s_depth +
+                0.20 * s_tags
+            )
+            scored.append((node, combined))
+        
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
     
     def _query_combined(self, query: str, top_k: int) -> list:
         candidates = self.diffusion.sample(query, self.index, self.holographic, top_k=top_k * 3, temperature=0.15)
@@ -703,4 +825,5 @@ class OmegaCubeEngineV2:
             "abstained_results": self.abstained_results,
             "bias_detections": self.bias_detections,
             "hierarchy_levels": len(self.hierarchy_tree) if self.hierarchy_built else 0,
+            "hnsw": self.hnsw.stats(),
         }

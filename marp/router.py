@@ -166,6 +166,7 @@ class MARPRouter:
 
     def _init_domain_index(self):
         self._kw_to_domain: dict[str, list[str]] = {}
+        self._kw_depth: dict[str, int] = {}  # v4: keyword hierarchy depth
         for domain, info in STANDARD_DOMAINS.items():
             for kw in info["keywords"]:
                 kw = kw.lower()
@@ -351,21 +352,47 @@ class MARPRouter:
         return scores
 
     def _keyword_score(self, query: str) -> dict[str, tuple[float, list[str]]]:
-        """Keyword-based domain scoring with IDF-like specificity weighting.
+        """Keyword-based domain scoring with IDF + depth + co-occurrence.
 
-        Keywords exclusive to one domain score 1.0; keywords shared across N
-        domains score 1/N each. This prevents generic terms ('binary', 'model')
-        from drowning out domain-specific signals ('milvus', 'packbits').
+        v4 improvements:
+        - IDF-like specificity: keywords exclusive to 1 domain score 1.0,
+          shared across N domains score 1/N each.
+        - Depth boost: keywords from deeper hierarchies (level 2+) score
+          higher — 'ingestion.voice' is more specific than 'vault.structure'.
+        - Co-occurrence: if 2+ query words match the SAME domain, that
+          domain gets a multiplicative boost. Resolves 'voice notes inbox'
+          → ingestion (3 matches) vs vault (1 match).
         """
         scores: dict[str, tuple[float, list[str]]] = {}
         words = set(re.findall(r'\b\w+\b', query.lower()))
+        
+        # Phase 1: Score each keyword with IDF + depth
         for word in words:
             if word in self._kw_to_domain:
                 domains_for_word = self._kw_to_domain[word]
                 specificity = 1.0 / len(domains_for_word)  # IDF-like
+                
+                # Depth boost: deeper hierarchy = more specific
+                depth = self._kw_depth.get(word, 0)
+                depth_boost = 1.0 + 0.3 * min(depth, 3)  # max +0.9 at depth 3
+                
                 for domain in domains_for_word:
                     prev_score, prev_matches = scores.get(domain, (0.0, []))
-                    scores[domain] = (prev_score + specificity, prev_matches + [word])
+                    scores[domain] = (
+                        prev_score + specificity * depth_boost,
+                        prev_matches + [word]
+                    )
+        
+        # Phase 2: Co-occurrence boost
+        # Domains with 2+ matched keywords get multiplicative boost
+        for domain in list(scores.keys()):
+            score, matched = scores[domain]
+            n_matches = len(matched)
+            if n_matches >= 3:
+                scores[domain] = (score * 1.5, matched)  # strong co-occurrence
+            elif n_matches >= 2:
+                scores[domain] = (score * 1.2, matched)  # moderate co-occurrence
+        
         return scores
 
     def _combine_scores(
@@ -602,6 +629,16 @@ class MARPRouter:
                     if added >= 30:
                         break
                     self._kw_to_domain.setdefault(kw, []).append(domain)
+                    # v4: Track hierarchy depth for depth-boost scoring
+                    # Keywords from deeper hierarchies are more specific
+                    max_depth = 0
+                    for n in nodes:
+                        for h in getattr(n, 'hierarchies', []):
+                            normalized = h.replace("/", ".")
+                            parts = normalized.split(".")
+                            if kw in [p.lower() for p in parts]:
+                                max_depth = max(max_depth, len(parts) - 1)
+                    self._kw_depth[kw] = max(self._kw_depth.get(kw, 0), max_depth)
                     added += 1
         except Exception:
             pass

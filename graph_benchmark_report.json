@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-26T19:00:53.563242",
+  "timestamp": "2026-07-26T20:27:55.983663",
   "benchmark": "graph_engineering_v2",
   "source_article": "Graph Engineering Clearly Explained (Akshay Pachaar)",
   "patterns": 5,
@@ -66,81 +66,81 @@
       "accuracy": 0.0,
       "correct": 0,
       "total": 7,
-      "avg_ms": 3.907
+      "avg_ms": 3.09
     },
     "conditional_review_loop": {
       "accuracy": 0.0,
       "correct": 0,
       "total": 7,
-      "avg_ms": 6.806
+      "avg_ms": 6.222
     },
     "parallel_fanout": {
       "accuracy": 0.0,
       "correct": 0,
       "total": 7,
-      "avg_ms": 7.0
+      "avg_ms": 7.372
     },
     "state_corruption": {
       "accuracy": 0.0,
       "correct": 0,
       "total": 7,
-      "avg_ms": 7.769
+      "avg_ms": 7.161
     },
     "multi_model_specialists": {
       "accuracy": 0.0,
       "correct": 0,
       "total": 7,
-      "avg_ms": 7.246
+      "avg_ms": 6.311
     },
     "_global": {
       "accuracy": 0.0,
       "correct": 0,
       "total": 35,
-      "avg_ms": 6.546
+      "avg_ms": 6.031
     }
   },
   "after": {
     "sequential_pipeline": {
-      "accuracy": 85.7,
-      "correct": 6,
+      "accuracy": 71.4,
+      "correct": 5,
       "total": 7,
-      "avg_ms": 9.649
+      "avg_ms": 8.898
     },
     "conditional_review_loop": {
       "accuracy": 100.0,
       "correct": 7,
       "total": 7,
-      "avg_ms": 8.845
+      "avg_ms": 8.569
     },
     "parallel_fanout": {
       "accuracy": 71.4,
       "correct": 5,
       "total": 7,
-      "avg_ms": 9.234
+      "avg_ms": 8.773
     },
     "state_corruption": {
-      "accuracy": 85.7,
-      "correct": 6,
+      "accuracy": 100.0,
+      "correct": 7,
       "total": 7,
-      "avg_ms": 8.993
+      "avg_ms": 8.589
     },
     "multi_model_specialists": {
       "accuracy": 85.7,
       "correct": 6,
       "total": 7,
-      "avg_ms": 8.209
+      "avg_ms": 7.735
     },
     "_global": {
       "accuracy": 85.7,
       "correct": 30,
       "total": 35,
-      "avg_ms": 8.986
+      "avg_ms": 8.513
     }
   },
   "telemetry": {
-    "session_id": "graph_bench_20260726_190052",
-    "generated_at": "2026-07-26T19:00:53.555766",
-    "duration_seconds": 0.6,
+    "session_id": "graph_bench_20260726_202755",
+    "generated_at": "2026-07-26T20:27:55.975633",
+    "duration_seconds": 0.5,
     "totals": {
       "routings": 20,
       "queries": 0,
@@ -157,44 +157,43 @@
       "bias_detections": 0
     },
     "latency": {
-      "avg_ms": 7.766,
-      "p50_ms": 8.509,
-      "p95_ms": 10.448,
-      "p99_ms": 12.689,
-      "max_ms": 12.689
+      "avg_ms": 7.272,
+      "p50_ms": 7.706,
+      "p95_ms": 9.415,
+      "p99_ms": 11.397,
+      "max_ms": 11.397
     },
     "query_modes": {},
     "domain_distribution": {
+      "seguridad": 6,
       "unknown": 5,
-      "review": 5,
-      "agent": 4,
+      "research": 5,
+      "generation": 4,
+      "evaluation": 4,
+      "writing": 4,
+      "planning": 4,
       "ingestion": 4,
-      "research": 4,
-      "revision": 3,
-      "codesearch": 3,
-      "docsearch": 3,
-      "writing": 3,
-      "planning": 3,
-      "execution": 3,
-      "auditing": 3,
-      "corruption": 3,
-      "generation": 3,
-      "evony": 2,
+      "recovery": 3,
+      "approval": 2,
       "code": 2,
       "transformation": 2,
-      "evaluation": 2,
-      "recovery": 2,
+      "merging": 2,
+      "comfyui": 2,
+      "reporting": 2,
+      "execution": 2,
+      "revision": 2,
+      "docsearch": 2,
+      "corruption": 2,
+      "auditing": 2,
       "language": 1,
-      "hermes": 1,
-      "business": 1,
-      "comfyui": 1,
-      "ciencia": 1,
       "omega": 1,
+      "business": 1,
+      "sistema": 1,
+      "agent": 1,
+      "review": 1,
       "formatting": 1,
-      "approval": 1,
-      "merging": 1,
       "websearch": 1,
-      "reporting": 1
+      "codesearch": 1
     },
     "mode_distribution": {},
     "errors": {
