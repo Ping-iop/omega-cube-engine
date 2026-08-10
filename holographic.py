@@ -18,6 +18,8 @@ Date: 2026-06-11
 
 import math
 import random
+import hashlib
+import numpy as np
 from typing import Optional
 
 
@@ -42,21 +44,72 @@ class HolographicEncoder:
         random.seed(seed)
         self._basis_cache: dict[str, list[float]] = {}
     
+    # Common English stopwords that cause cross-domain collisions
+    _STOPWORDS = frozenset({
+        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+        'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+        'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought',
+        'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from',
+        'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
+        'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then',
+        'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each',
+        'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no',
+        'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very',
+        'just', 'because', 'but', 'and', 'or', 'if', 'while', 'about',
+        'knowledge', 'domain', 'axiom', 'concept', 'instance',
+    })
+    
     def encode_node(self, content: str, hierarchy: str) -> list[float]:
-        """Create a base vector for a node from its content and hierarchy."""
-        key = f"{content[:80]}:{hierarchy}"
+        """
+        Create a semantic vector via feature hashing (hashing trick).
+        
+        Each token maps to a deterministic position in the vector space.
+        Shared tokens between query and document produce similar vectors,
+        enabling genuine semantic retrieval via HNSW cosine similarity.
+        
+        Uses double hashing: h1 → position, h2 → sign (+1/-1).
+        This is the standard HashingVectorizer approach (Weinberger 2009).
+        """
+        key = f"{content[:120]}:{hierarchy}"
         if key in self._basis_cache:
             return self._basis_cache[key]
         
-        # Deterministic pseudo-random vector from content seed
-        seed_val = hash(key) % (2**31)
-        rng = random.Random(seed_val)
+        vec = [0.0] * self.dim
         
-        # Phase vector (frequency domain encoding)
-        vec = [rng.uniform(-1, 1) for _ in range(self.dim)]
+        # Tokenize: content (filtered by stopwords)
+        tokens = []
+        for w in content.lower().split():
+            w = w.strip('.,;:!?()[]{}"\'-')
+            if len(w) > 1 and w not in self._STOPWORDS:
+                tokens.append(w)
         
-        # Normalize
-        norm = math.sqrt(sum(v**2 for v in vec))
+        # Bigrams: capture word-pair semantics ("transformer attention" ≠ "attention transformer")
+        for i in range(len(tokens) - 1):
+            tokens.append(tokens[i] + "_" + tokens[i + 1])
+        
+        # Hierarchy terms get 1.5x weight (moderate domain signal)
+        if hierarchy:
+            for part in hierarchy.replace('.', ' ').replace('/', ' ').lower().split():
+                part = part.strip()
+                if len(part) > 1:
+                    tokens.append(part)
+                    # 0.5x extra via half-contribution trick: add once more only if
+                    # we want >1x. For 1.5x we add the token once (base) and rely on
+                    # the fact that hierarchy parts are short and distinctive.
+                    # Actually just append once — 1x is enough when content is filtered.
+        
+        # Feature hashing: each token → (position, sign)
+        for token in tokens:
+            # h1: position in vector
+            h1 = int(hashlib.md5(token.encode()).hexdigest(), 16)
+            pos = h1 % self.dim
+            # h2: sign (+1 or -1) to reduce collision bias
+            h2 = int(hashlib.sha1(token.encode()).hexdigest(), 16)
+            sign = 1.0 if (h2 % 2 == 0) else -1.0
+            vec[pos] += sign
+        
+        # L2 normalize
+        norm = math.sqrt(sum(v * v for v in vec))
         if norm > 0:
             vec = [v / norm for v in vec]
         
@@ -70,30 +123,30 @@ class HolographicEncoder:
         Binds two vectors to create a new vector that represents 
         their association. Approximate inverse of unbind.
         """
-        result = [0.0] * self.dim
-        for i in range(self.dim):
-            for j in range(self.dim):
-                result[(i + j) % self.dim] += v1[i] * v2[j]
+        # Use FFT for circular convolution O(n log n)
+        # bind(a,b) = ifft(fft(a) * fft(b))
+        v1_arr = np.array(v1)
+        v2_arr = np.array(v2)
+        result = np.real(np.fft.ifft(np.fft.fft(v1_arr) * np.fft.fft(v2_arr)))
         # Normalize
-        norm = math.sqrt(sum(v**2 for v in result))
+        norm = np.linalg.norm(result)
         if norm > 0:
-            result = [v / norm for v in result]
-        return result
+            result = result / norm
+        return result.tolist()
     
     def unbind(self, bound: list[float], v1: list[float]) -> list[float]:
         """
         Circular correlation: recovers v2 from bind(v1, v2) given v1.
-        Uses the approximate inverse property of circular convolution.
+        Uses FFT for O(n log n) performance (matches bind complexity).
         """
-        result = [0.0] * self.dim
-        v1_inv = [v1[-i] if i > 0 else v1[0] for i in range(self.dim)]
-        for i in range(self.dim):
-            for j in range(self.dim):
-                result[(i + j) % self.dim] += bound[i] * v1_inv[j]
-        norm = math.sqrt(sum(v**2 for v in result))
+        bound_arr = np.array(bound)
+        v1_arr = np.array(v1)
+        # Circular correlation = ifft(fft(bound) * conj(fft(v1)))
+        result = np.real(np.fft.ifft(np.fft.fft(bound_arr) * np.conj(np.fft.fft(v1_arr))))
+        norm = np.linalg.norm(result)
         if norm > 0:
-            result = [v / norm for v in result]
-        return result
+            result = result / norm
+        return result.tolist()
     
     def bundle(self, vectors: list[list[float]]) -> list[float]:
         """Superposition: combine multiple vectors into one."""

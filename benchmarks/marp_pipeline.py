@@ -6,8 +6,8 @@ sys.path.insert(0, str(Path.home() / ".hermes/axioma-omega-protocol"))
 from omega_cube.engine import OmegaCubeEngine
 from omega_cube.predictive_search import PredictiveContextSearch
 
-RURL="http://127.0.0.1:8084/v1/chat/completions"  # Qwen0.8B GPU
-WURL="http://127.0.0.1:8082/completion"   # Qwen3.6 27B (GPU, completion endpoint)
+RURL="http://127.0.0.1:8082/v1/chat/completions"  # Qwen0.8B GPU
+WURL="http://127.0.0.1:8084/completion"   # Qwen3.6 27B (GPU, completion endpoint)
 
 # Omega-Cube
 e=OmegaCubeEngine()

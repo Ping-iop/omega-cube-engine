@@ -52,7 +52,7 @@ Rules:
 
     def __init__(self, model_path: str = None):
         if model_path is None:
-            model_path = "J:/modelos_ia/Qwen3.5-0.8B-Q6_K.gguf"
+            model_path = "/p/AI_INFRA/custom_models/Qwen/Qwen3.5-0.8B-Q6_K.gguf"
         self.model_path = Path(model_path)
         self._llm: Optional[object] = None
         self._available = self.model_path.exists()

@@ -6,7 +6,7 @@ Router (8084) stays running with Qwen0.8B throughout.
 import requests, time, re, subprocess, json, sys
 from pathlib import Path
 
-LLAMA_DIR = Path("C:/Users/GPAMD/Downloads/Llama.cpp Cuda/llama-b9045-bin-win-cuda-13.1-x64")
+LLAMA_DIR = Path("C:/Users/GPAMD/Downloads/LLAMA~1.CPP/llama-b9045-bin-win-cuda-13.1-x64")
 LLAMA_SERVER = LLAMA_DIR / "llama-server.exe"
 
 MODELS = {

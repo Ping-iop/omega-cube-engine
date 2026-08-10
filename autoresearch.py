@@ -62,7 +62,7 @@ class AutoResearchLoop:
             "anneal_temp": [0.5, 1.0, 2.0, 5.0],
             "cooling_rate": [0.90, 0.93, 0.95, 0.97, 0.99],
             "diffusion_steps": [10, 15, 20, 30, 50],
-            "guidance_scale": [1.0, 2.0, 3.0, 5.0],
+            "guidance_scale": [0.1, 0.3, 0.5, 0.8],
             "gray_weights_factuality": [0.25, 0.30, 0.35, 0.40, 0.50],
             "gray_weights_relevance": [0.15, 0.20, 0.25, 0.30],
             "tensor_grid_size": [5, 8, 10, 15, 20],
@@ -264,7 +264,7 @@ class AutoResearchLoop:
             self.engine.annealer.cooling_rate = config.get("cooling_rate", 0.95)
         if "diffusion_steps" in config and hasattr(self.engine, 'diffusion_sampler'):
             self.engine.diffusion_sampler.num_steps = config["diffusion_steps"]
-            self.engine.diffusion_sampler.guidance_scale = config.get("guidance_scale", 3.0)
+            self.engine.diffusion_sampler.guidance_scale = config.get("guidance_scale", 0.3)
     
     def _snapshot_state(self) -> dict:
         return self._get_config()

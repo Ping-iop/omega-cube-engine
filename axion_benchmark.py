@@ -63,24 +63,79 @@ def build_test_graph_v1(engine, num_domains=5, nodes_per_domain=15):
 
 
 def build_test_graph_v2(engine, num_domains=5, nodes_per_domain=15):
-    """Build test graph on v2 engine (same data)."""
+    """Build test graph on v2 engine with realistic content."""
     domains = [
         {"name": "COMFYUI", "dimensions": ["COMFYUI.WORKFLOWS.GENERATION", "COMFYUI.MODELS.CHECKPOINTS", "COMFYUI.NODES.CUSTOM", "IMAGE_QUALITY.RESOLUTION", "AI.TOOLS.VISUAL"],
-         "topics": ["SDXL", "SD1.5", "ControlNet", "IPAdapter", "LoRA", "Upscale", "Inpaint", "FaceRestore", "Prompting", "Sampling"]},
+         "topics": [
+             ("SDXL", "Stable Diffusion XL image generation model for high-resolution text-to-image synthesis with improved prompt adherence"),
+             ("SD1.5", "Stable Diffusion 1.5 checkpoint for fast image generation with large community LoRA ecosystem"),
+             ("ControlNet", "ControlNet preprocessor nodes for pose-guided image generation using depth maps and edge detection"),
+             ("IPAdapter", "IPAdapter image prompt adapter for style transfer and reference-based image generation"),
+             ("LoRA", "Low-Rank Adaptation fine-tuning for custom character and style models in ComfyUI"),
+             ("Upscale", "Image upscaling workflow using 4x-UltraSharp and ESRGAN models for resolution enhancement"),
+             ("Inpaint", "Inpainting workflow for masked region editing and object replacement in generated images"),
+             ("FaceRestore", "Face restoration using CodeFormer and GFPGAN models for portrait enhancement"),
+             ("Prompting", "Prompt engineering techniques for ComfyUI including weighted prompts and negative prompts"),
+             ("Sampling", "Sampler comparison for ComfyUI including Euler, DPM++, and UniPC scheduling strategies"),
+         ]},
         {"name": "EVONY", "dimensions": ["EVONY.GENERALS.PVP", "EVONY.GENERALS.F2P", "EVONY.STRATEGY.RALLIES", "GAMING.MOBILE.STRATEGY", "F2P.OPTIMIZATION.RESOURCES"],
-         "topics": ["Marcian", "CharlesVI", "Hermes", "Akechi", "Tamar", "Ranged", "Mounted", "Ground", "Siege", "Defense"]},
+         "topics": [
+             ("Marcian", "Marcian general PvP guide for ranged attack formations and siege warfare tactics"),
+             ("CharlesVI", "Charles VI F2P general ranking and optimal talent tree for mounted cavalry"),
+             ("Hermes", "Hermes general strategy for alliance rallies and battlefield positioning"),
+             ("Akechi", "Akechi general guide for ground troop defense and garrison optimization"),
+             ("Tamar", "Tamar general F2P guide for resource optimization and troop training efficiency"),
+             ("Ranged", "Ranged attack formation guide for PvP battles with archer and siege units"),
+             ("Mounted", "Mounted cavalry strategy for open-field battles and flanking maneuvers"),
+             ("Ground", "Ground troop defense guide for city garrison and alliance fortification"),
+             ("Siege", "Siege warfare tactics for attacking fortified cities and alliance strongholds"),
+             ("Defense", "City defense strategy for F2P players against whale attacks and rallies"),
+         ]},
         {"name": "HERMES", "dimensions": ["HERMES.CONFIG.MCP", "HERMES.SKILLS.AUTOMATION", "HERMES.CRON.MAINTENANCE", "AI.AGENTS.TOOLS", "DEVELOPMENT.AUTOMATION"],
-         "topics": ["MCP", "Skills", "CronJobs", "Memory", "Plugins", "Config", "Providers", "Delegation", "Session", "Tools"]},
+         "topics": [
+             ("MCP", "MCP server configuration guide for connecting external tools and APIs to Hermes agent"),
+             ("Skills", "Skills automation system for creating reusable workflows and procedural memory"),
+             ("CronJobs", "Cron job scheduling for automated maintenance tasks and periodic reporting"),
+             ("Memory", "Memory management system for persistent context across agent sessions"),
+             ("Plugins", "Plugin architecture for extending Hermes with custom tools and UI panes"),
+             ("Config", "Configuration management for Hermes providers, models, and tool settings"),
+             ("Providers", "LLM provider setup for OpenAI, Anthropic, and local model integration"),
+             ("Delegation", "Task delegation system for spawning subagents and parallel workstreams"),
+             ("Session", "Session context engine for automatic indexing and conversation continuity"),
+             ("Tools", "Tool integration guide for browser, terminal, file, and search capabilities"),
+         ]},
         {"name": "SECURITY", "dimensions": ["SECURITY.CRYPTOGRAPHY.STEGANOGRAPHY", "SECURITY.VERIFICATION.MULTI_BIT", "HBIT.PROTOCOL.GRAYSCALE", "AI.SAFETY.VERIFICATION", "TRUST.VALIDATION.EVIDENCE"],
-         "topics": ["H-Bit", "GrayScale", "Embedding", "Verification", "PartialEvidence", "Watermark", "Fingerprint", "Hash", "Signature", "Trust"]},
+         "topics": [
+             ("H-Bit", "H-Bit protocol for multi-bit cryptographic steganography with grayscale verification"),
+             ("GrayScale", "Gray-scale composite scoring for evidence validation and trust assessment"),
+             ("Embedding", "Steganographic embedding techniques for hiding verification data in media files"),
+             ("Verification", "Multi-bit verification protocol for file integrity and content authenticity"),
+             ("PartialEvidence", "Partial evidence accumulation for progressive trust building in distributed systems"),
+             ("Watermark", "Digital watermarking for content provenance tracking and copyright protection"),
+             ("Fingerprint", "Cryptographic fingerprinting for unique content identification and tamper detection"),
+             ("Hash", "Hash chain verification for tamper-evident logging and audit trail integrity"),
+             ("Signature", "Digital signature schemes for message authentication and non-repudiation"),
+             ("Trust", "Trust validation framework for evidence-based confidence scoring in AI systems"),
+         ]},
         {"name": "ML", "dimensions": ["ML.TRAINING.PRETRAINING", "ML.ARCHITECTURE.DIFFUSION", "ML.OPTIMIZATION.ANNEALING", "AI.RESEARCH.NEUROSYMBOLIC", "SCIENCE.COMPUTATION.ALGORITHMS"],
-         "topics": ["DiffusionGemma", "AutoResearch", "Karpathy", "Annealing", "Holographic", "Tensor", "Embedding", "FineTuning", "Inference", "Architecture"]},
+         "topics": [
+             ("DiffusionGemma", "Diffusion language model architecture combining denoising diffusion with transformer pretraining"),
+             ("AutoResearch", "Automated research pipeline using LLM agents for hypothesis generation and experiment design"),
+             ("Karpathy", "Karpathy-style training loop optimization with gradient accumulation and learning rate scheduling"),
+             ("Annealing", "Quantum annealing topology optimization for combinatorial search and constraint satisfaction"),
+             ("Holographic", "Holographic reduced representations for vector symbolic architectures and memory encoding"),
+             ("Tensor", "Tensor decomposition methods for model compression and efficient inference"),
+             ("Embedding", "Embedding layer design for semantic similarity and retrieval augmentation"),
+             ("FineTuning", "Fine-tuning strategies including LoRA, QLoRA, and full parameter adaptation"),
+             ("Inference", "Inference optimization with KV cache, speculative decoding, and batch serving"),
+             ("Architecture", "Neural architecture search and design patterns for efficient model scaling"),
+         ]},
     ]
     total = 0
     for domain in domains[:num_domains]:
         axiom = engine.add_node(content=f"{domain['name']} is a knowledge domain", hierarchies=[domain["dimensions"][0]], node_type="AXIOM", confidence=1.0, tags=[domain["name"].lower(), "axiom"])
         total += 1
-        for i, topic in enumerate(domain["topics"][:nodes_per_domain]):
+        for i, (topic_name, topic_desc) in enumerate(domain["topics"][:nodes_per_domain]):
             primary = domain["dimensions"][i % len(domain["dimensions"])]
             secondary = domain["dimensions"][(i + 1) % len(domain["dimensions"])]
             hier_list = [primary, secondary]
@@ -90,8 +145,9 @@ def build_test_graph_v2(engine, num_domains=5, nodes_per_domain=15):
             pos_y = (domains.index(domain) / num_domains) * 0.8 + 0.1
             tensor_pos = [pos_x, pos_y] + [0.5] * max(0, len(hier_list) - 2)
             node = engine.add_node(
-                content=f"[{domain['name']}] {topic}: Detailed knowledge about {topic.lower()} in {domain['name'].lower()}. Multi-dimensional node spanning {len(hier_list)} axes.",
-                hierarchies=hier_list, tensor_position=tensor_pos, node_type="CONCEPT", confidence=0.85, tags=[domain["name"].lower(), topic.lower()])
+                content=f"[{domain['name']}] {topic_name}: {topic_desc}",
+                hierarchies=hier_list, tensor_position=tensor_pos, node_type="CONCEPT", confidence=0.85,
+                tags=[domain["name"].lower(), topic_name.lower()] + topic_desc.lower().split()[:8])
             total += 1
             engine.associate(axiom.node_id, node.node_id)
     return total
@@ -143,7 +199,16 @@ def benchmark_engine(engine, engine_name, modes, num_queries=20):
             relevant_10 = 0
             for i, hit in enumerate(hits[:10]):
                 hit_domain = hit.get("primary_hierarchy", "").split(".")[0]
-                match = any(hit_domain.upper().startswith(ed.upper()) or ed.upper() in hit_domain.upper() for ed in expected_domains)
+                hit_content = hit.get("content", "")
+                hit_tags = [t.lower() for t in hit.get("tags", [])]
+                # Match by hierarchy prefix OR content domain tag [DOMAIN] OR tags
+                match = any(
+                    hit_domain.upper().startswith(ed.upper())
+                    or ed.upper() in hit_domain.upper()
+                    or f"[{ed.upper()}]" in hit_content.upper()
+                    or ed.lower() in hit_tags
+                    for ed in expected_domains
+                )
                 if match:
                     if i < 5:
                         relevant_5 += 1

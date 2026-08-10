@@ -25,17 +25,15 @@ _PROJECT_ROOT = _SCRIPT_DIR.parent  # axioma-omega-protocol/
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from omega_cube import OmegaCubeEngine
+from omega_cube.engine import OmegaCubeEngine
 from mcp.server.fastmcp import FastMCP
 
 # Initialize
 mcp = FastMCP("omega-cube")
 
-# Singleton engine
-_engine_path = Path(__file__).parent / "memory" / "omega_cube_memory.json"
+# Singleton engine — el constructor auto-carga memory/omega_cube_memory.json.
+# FIX 2026-08-09 (22:05): el load() extra duplicaba axiomas (→ corrupción 926MB).
 engine = OmegaCubeEngine()
-if _engine_path.exists():
-    engine.load(str(_engine_path))
 
 
 @mcp.tool()

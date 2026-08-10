@@ -81,6 +81,9 @@ class OmegaCubeEngine:
         # Stats
         self.query_count = 0
         self.total_retrieval_time = 0.0
+        
+        # Auto-load persisted state if available
+        self.load()
     
     # ── Knowledge Ingestion ───────────────────────────────────────
     
@@ -265,9 +268,11 @@ class OmegaCubeEngine:
         patterns = self.find_patterns(query, min_strength=0.3)
         results = []
         for p in patterns[:top_k]:
-            # Find the actual node for each pattern
+            # Match pattern topic to node's primary hierarchy prefix
+            topic = p.get("anchor_cube", "")
             for nid, node in self.nodes.items():
-                if node.primary_hierarchy and p["anchor_cube"] in str(nid):
+                prefix = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else ""
+                if prefix == topic or topic in node.primary_hierarchy:
                     results.append((node, p["pattern_strength"]))
                     break
         return results if results else self._query_diffusion(query, top_k, 0.1)
@@ -432,10 +437,14 @@ class OmegaCubeEngine:
         if path is None:
             path = str(self.memory_dir / "omega_cube_memory.json")
         
+        nodes_data = {nid: node.to_dict() for nid, node in self.nodes.items()}
+        # FIX 2026-08-09: no persistir firmas holográficas — son derivables
+        # determinísticamente de content+hierarchy; load() las recalcula.
+        for nd in nodes_data.values():
+            nd.pop('holographic_signature', None)
+
         data = {
-            "nodes": {
-                nid: node.to_dict() for nid, node in self.nodes.items()
-            },
+            "nodes": nodes_data,
             "axiom_ids": [n.node_id for n in self.axioms],
             "stats": {
                 "query_count": self.query_count,
@@ -451,7 +460,14 @@ class OmegaCubeEngine:
             json.dump(data, f, ensure_ascii=False, indent=2)
     
     def load(self, path: str = None) -> bool:
-        """Load engine state from disk."""
+        """Load engine state from disk.
+        
+        FIX 2026-08-09 (corrupción 926MB): load() es IDEMPOTENTE. Antes
+        appendeaba axiomas e insertaba en el índice sin limpiar; con doble
+        load() (auto-load de __init__ + load() explícito en indexer/MCP) los
+        axiom_ids se duplicaban en cada ciclo save/load → crecimiento
+        exponencial 5→10→20→…→37M de IDs (926 MB, JSON truncado a EOF).
+        """
         if path is None:
             path = str(self.memory_dir / "omega_cube_memory.json")
         
@@ -461,11 +477,24 @@ class OmegaCubeEngine:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         
+        # Reset completo del estado antes de restaurar (idempotencia)
+        self.nodes = {}
+        self.index = TensorIndex(grid_size=self.index.grid_size)
+        self.axioms = []
+        
         # Restore nodes
         for nid, node_data in data.get("nodes", {}).items():
             node = TensorNode.from_dict(node_data)
             self.nodes[nid] = node
             self.index.insert(node)
+        
+        # FIX 2026-08-09: las firmas holográficas ya no se persisten (compactación).
+        # Se recalculan en carga — son derivables de content+hierarchy (determinista).
+        for node in self.nodes.values():
+            if not node.holographic_signature:
+                node.holographic_signature = self.holographic.encode_node(
+                    node.content, node.primary_hierarchy
+                )
         
         # Restore axioms
         for axiom_id in data.get("axiom_ids", []):

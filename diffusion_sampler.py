@@ -40,12 +40,13 @@ class DiffusionGraphSampler:
     def __init__(
         self,
         num_steps: int = 20,
-        guidance_scale: float = 3.0,
-        seed: int = 42,
+        guidance_scale: float = 0.3,
+        seed: int | None = None,
     ):
         self.num_steps = num_steps
         self.guidance_scale = guidance_scale
-        random.seed(seed)
+        if seed is not None:
+            random.seed(seed)
         
         self._noise_cache: dict[int, list[float]] = {}
     
@@ -111,11 +112,17 @@ class DiffusionGraphSampler:
                     candidates[i], index, base_scores, candidates
                 )
                 
-                # Update score with guidance-weighted denoising
+                # FIX 2026-08-09 (ranking saturado): antes era
+                #   score = (1-nl)*signal + nl*noise + guidance_scale*guidance*(1-nl)
+                # con guidance_scale=3.0 y guidance≈0.5 → TODOS los nodos saturaban a
+                # 1.0, el ranking empataba y se ordenaba por inserción (siempre el
+                # mismo top-1). Ahora guidance es una señal relativa al promedio de
+                # señales base, acotada por guidance_scale (default 0.3).
+                mean_signal = sum(base_scores) / len(base_scores) if base_scores else 0.0
+                guidance_signal = (guidance - mean_signal) if mean_signal > 0 else 0.0
                 scores[i] = (
-                    (1 - noise_level) * signal
+                    (1 - noise_level) * (signal + self.guidance_scale * guidance_signal)
                     + noise_level * noise
-                    + self.guidance_scale * guidance * (1 - noise_level)
                 )
                 scores[i] = max(0.0, min(1.0, scores[i]))
         

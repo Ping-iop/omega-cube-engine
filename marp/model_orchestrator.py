@@ -27,9 +27,9 @@ Uso:
   python model_orchestrator.py --benchmark
 
 Requisitos:
-  - Qwen0.8B router en 127.0.0.1:8084 (siempre montado)
+  - Qwen0.8B router en 127.0.0.1:8082 (siempre montado)
   - Modelos locales en J:/modelos_ia/
-  - llama.cpp CUDA 13.1 en Downloads/Llama.cpp Cuda/
+  - llama.cpp CUDA 13.1 en Downloads/LLAMA~1.CPP/
 """
 
 import os, sys, json, time, re, subprocess, signal, requests
@@ -40,7 +40,7 @@ from typing import Optional
 
 # ─── Paths ───────────────────────────────────────────────────────
 HOME = Path.home()
-LLAMA_DIR = Path("C:/Users/GPAMD/Downloads/Llama.cpp Cuda/llama-b9045-bin-win-cuda-13.1-x64")
+LLAMA_DIR = Path("C:/Users/GPAMD/Downloads/LLAMA~1.CPP/llama-b9045-bin-win-cuda-13.1-x64")
 LLAMA_SERVER = LLAMA_DIR / "llama-server.exe"
 MODELS_DIR = Path("J:/modelos_ia")
 LOG_DIR = HOME / ".hermes" / "logs" / "marp_router"
@@ -108,7 +108,39 @@ MODEL_REGISTRY = {
         size_gb=9, type="dense",
         capabilities=["math", "code", "science", "lightweight"],
         thinking="none", thinking_latency="N/A", no_thinking_latency="787ms",
-        quality=3, vram_gb=10, notes="M�s ligero. Cabe con router + otro worker."
+        quality=3, vram_gb=10, notes="Ms ligero. Cabe con router + otro worker."
+    ),
+    "gemma-4-coder-v2": ModelProfile(
+        name="Gemma 4 Coder v2 Q8",
+        file="Gemma/gemma4-coder-v2-Q8_0.gguf",
+        size_gb=12, type="dense",
+        capabilities=["code", "math", "general"],
+        thinking="none", thinking_latency="N/A", no_thinking_latency="800ms",
+        quality=4, vram_gb=14, notes="Modelo Gemma especializado en código de alta precisión."
+    ),
+    "qwen3.6-35b-heretic-apex": ModelProfile(
+        name="Qwen3.6 35B Heretic APEX",
+        file="Qwen/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Quality.gguf",
+        size_gb=23.5, type="dense",
+        capabilities=["general", "vision", "reasoning"],
+        thinking="none", thinking_latency="N/A", no_thinking_latency="1.2s",
+        quality=4, vram_gb=24, notes="Variante sin censura 35B A3B con soporte visual."
+    ),
+    "qwen3.6-40b-deck-opus": ModelProfile(
+        name="Qwen3.6 40B Deck Opus",
+        file="Qwen/Qwen3.6-40B-Deck-Opus-NEO-CODE-HERE-2T-OT-IQ4_XS.gguf",
+        size_gb=22, type="dense",
+        capabilities=["code", "math", "reasoning", "vision"],
+        thinking="none", thinking_latency="N/A", no_thinking_latency="1.4s",
+        quality=5, vram_gb=24, notes="Modelo Deckard/Opus de 40B optimizado para lógica matemática y software complejo."
+    ),
+    "colibri": ModelProfile(
+        name="Colibri GLM-5.2 744B MoE",
+        file="colibri.bat",
+        size_gb=370, type="moe",
+        capabilities=["math", "science", "reasoning", "analysis"],
+        thinking="on", thinking_latency="heavy", no_thinking_latency="N/A",
+        quality=5, vram_gb=0, notes="Corre en CPU via streaming desde disco (370GB int4)."
     ),
 }
 
@@ -116,7 +148,7 @@ MODEL_REGISTRY = {
 DOMAIN_ROUTES = {
     "math": {
         "primary": "gemma-4-31b",
-        "thinking": "qwen3.5-27b-reasoning",
+        "thinking": "colibri",
         "fast": "glm-4.7-flash",
     },
     "code": {
@@ -125,7 +157,7 @@ DOMAIN_ROUTES = {
         "light": "qwen3.5-9b",
     },
     "science": {
-        "primary": "qwen3.5-27b-reasoning", 
+        "primary": "colibri", 
         "fast": "gemma-4-31b",
         "light": "glm-4.7-flash",
     },
@@ -146,7 +178,7 @@ DOMAIN_ROUTES = {
         "fast": "glm-4.7-flash",
     },
     "philosophy": {
-        "primary": "qwen3.5-27b-reasoning",
+        "primary": "colibri",
         "fast": "gemma-4-31b",
     },
     "gaming": {
@@ -165,9 +197,9 @@ DOMAIN_ROUTES = {
 
 # ─── Router client ────────────────────────────────────────────────
 class Router:
-    """Always-on Qwen0.8B router. Must be on 127.0.0.1:8084."""
+    """Always-on Qwen0.8B router. Must be on 127.0.0.1:8082."""
     
-    ROUTER_URL = "http://127.0.0.1:8084/v1/chat/completions"
+    ROUTER_URL = "http://127.0.0.1:8082/v1/chat/completions"
     
     FEW_SHOT_PROMPT = """Map queries to EXACT domains from: math,code,science,engineering,language,law,medical,business,philosophy,gaming,general.
 Output ONLY: domain or domain1,domain2.
@@ -190,7 +222,7 @@ Examples:
     def check(self) -> bool:
         """Check if router is alive."""
         try:
-            r = requests.get("http://127.0.0.1:8084/health", timeout=3)
+            r = requests.get("http://127.0.0.1:8082/health", timeout=3)
             self._available = r.json().get("status") == "ok"
         except:
             self._available = False
@@ -222,20 +254,31 @@ Examples:
 class ModelServer:
     """Manages llama-server lifecycle. Kills old, starts new."""
     
-    WORKER_PORT = 8082
+    WORKER_PORT = 8084
     
     def __init__(self):
         self._current_model = None
         self._process: Optional[subprocess.Popen] = None
     
     def kill(self):
-        """Kill any running llama-server."""
+        """Kill only the llama-server running on WORKER_PORT."""
         try:
-            subprocess.run(["taskkill.exe", "//F", "//IM", "llama-server.exe"],
-                          capture_output=True, timeout=5)
-            time.sleep(2)
-        except:
-            pass
+            output = subprocess.check_output("netstat -ano", shell=True, text=True)
+            pids = set()
+            for line in output.strip().split('\n'):
+                if f":{self.WORKER_PORT}" in line and "LISTENING" in line:
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        pids.add(parts[-1])
+            for pid in pids:
+                subprocess.run(["taskkill.exe", "/F", "/PID", pid], capture_output=True)
+            time.sleep(1)
+        except Exception as e:
+            if self._process:
+                try:
+                    self._process.kill()
+                except:
+                    pass
         self._current_model = None
         self._process = None
     
@@ -248,6 +291,38 @@ class ModelServer:
         if not profile:
             print(f"[ModelServer] Unknown model: {model_key}")
             return False
+
+        if model_key == "colibri":
+            self.kill()
+            time.sleep(2)
+            colibri_bat = Path.home() / ".hermes" / "colibri" / "colibri.bat"
+            if not colibri_bat.exists():
+                print(f"[ModelServer] Colibri wrapper not found at {colibri_bat}")
+                return False
+            cmd = [
+                str(colibri_bat),
+                "--model", "C:/Users/GPAMD/.hermes/colibri/models/glm5.2-int4",
+                "--experts-dir", "C:/Users/GPAMD/.hermes/colibri/experts/",
+                "--server",
+                "--port", str(self.WORKER_PORT),
+                "--host", "127.0.0.1"
+            ]
+            print(f"[ModelServer] Loading Colibri (744B MoE CPU Streaming)...")
+            self._process = subprocess.Popen(
+                cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            for i in range(10):
+                try:
+                    r = requests.get(f"http://127.0.0.1:{self.WORKER_PORT}/health", timeout=2)
+                    if r.status_code == 200 or r.json().get("status") == "ok":
+                        print(f"[ModelServer] Colibri READY ({i+1}s)")
+                        self._current_model = "colibri"
+                        return True
+                except:
+                    pass
+                time.sleep(1)
+            print(f"[ModelServer] TIMEOUT loading Colibri (Verifica que el modelo de 370GB este descargado)")
+            return False
         
         model_path = MODELS_DIR / profile.file
         if not model_path.exists():
@@ -258,12 +333,24 @@ class ModelServer:
         self.kill()
         time.sleep(2)
         
+        # Determine context size dynamically based on model key
+        new_ctx = 2048
+        if "35b" in model_key or "31b" in model_key or "27b" in model_key:
+            new_ctx = 98304
+        elif "flash" in model_key or "9b" in model_key or "12b" in model_key:
+            new_ctx = 131072
+        else:
+            new_ctx = 32768
+
         # Start new
         cmd = [
             str(LLAMA_SERVER),
             "-m", str(model_path),
             "-ngl", "99",
-            "-c", "2048",
+            "-c", str(new_ctx),
+            "--cache-type-k", "q4_0",
+            "--cache-type-v", "q4_0",
+            "--flash-attn", "on",
             "--port", str(self.WORKER_PORT),
             "--host", "127.0.0.1",
         ]
@@ -274,7 +361,7 @@ class ModelServer:
             cmd += ["--reasoning-format", "deepseek"]
         # "optional" handled at request time via enable_thinking
         
-        print(f"[ModelServer] Loading {profile.name}...")
+        print(f"[ModelServer] Loading {profile.name} (ctx={new_ctx})...")
         self._process = subprocess.Popen(
             cmd, cwd=str(LLAMA_DIR),
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -296,49 +383,83 @@ class ModelServer:
         print(f"[ModelServer] TIMEOUT loading {profile.name}")
         return False
     
-    def query(self, prompt: str, max_tokens: int = 100, 
+    # Tokens de control de Gemma 4 que causan loops si no se filtran
+    _GEMMA_CTRL_RE = re.compile(
+        r'<\|channel\|>.*?<channel\|>|'
+        r'<\|channel\|>.*?$|'
+        r'<channel\|>|'
+        r'<\|im_start\|>|<\|im_end\|>|'
+        r'<start_of_turn>|<end_of_turn>|'
+        r'<bos>|<eos>',
+        re.DOTALL
+    )
+
+    def query(self, prompt: str, max_tokens: int = 100,
               use_thinking: bool = False) -> tuple[str, float]:
         """Query the current worker model."""
         profile = MODEL_REGISTRY.get(self._current_model)
-        
-        # Determine endpoint and payload based on model
+
+        # Determine endpoint and payload based on model family
         if profile and profile.name.startswith("Gemma"):
-            # Gemma: completion endpoint
+            # --- Gemma 4: /completion + prompt manual ---
+            # No usar /v1/chat/completions con Jinja: causa loop infinito
+            # por re-inyección de reasoning_content y tokens de canal.
             endpoint = f"http://127.0.0.1:{self.WORKER_PORT}/completion"
-            gemma_prompt = f"<bos><start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-            payload = {"prompt": gemma_prompt, "max_tokens": max_tokens, "temperature": 0.3}
+            gemma_prompt = (
+                f"<bos><start_of_turn>user\n"
+                f"{prompt}"
+                f"<end_of_turn>\n<start_of_turn>model\n"
+            )
+            payload = {
+                "prompt":         gemma_prompt,
+                "max_tokens":     max_tokens,
+                "temperature":    0.35,
+                "repeat_penalty": 1.1,   # evita colapso de probabilidad
+                "stop":           ["<end_of_turn>", "<eos>", "<|im_end|>"],
+            }
+
         elif profile and "GLM" in profile.name:
             endpoint = f"http://127.0.0.1:{self.WORKER_PORT}/completion"
             glm_prompt = f"<|system|>Answer concisely.<|user|>{prompt}<|assistant|>"
-            payload = {"prompt": glm_prompt, "max_tokens": max_tokens, "temperature": 0.3}
+            payload = {
+                "prompt":      glm_prompt,
+                "max_tokens":  max_tokens,
+                "temperature": 0.3,
+                "stop":        ["<|user|>", "<|endoftext|>"],
+            }
+
         else:
-            # Qwen: chat completions
+            # Qwen y familia: /v1/chat/completions con Jinja nativo
             endpoint = f"http://127.0.0.1:{self.WORKER_PORT}/v1/chat/completions"
             payload = {
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens, "temperature": 0.3,
+                "messages":    [{"role": "user", "content": prompt}],
+                "max_tokens":  max_tokens,
+                "temperature": 0.3,
+                "chat_template_kwargs": {"enable_thinking": use_thinking},
             }
-            if not use_thinking:
-                payload["chat_template_kwargs"] = {"enable_thinking": False}
-            else:
-                payload["chat_template_kwargs"] = {"enable_thinking": True}
-        
+
         t0 = time.perf_counter()
         try:
-            timeout = 120 if use_thinking else 30
+            timeout = 120 if use_thinking else 60
             r = requests.post(endpoint, json=payload, timeout=timeout)
             elapsed = (time.perf_counter() - t0) * 1000
-            
-            if "completion" in endpoint:
-                raw = r.json()["content"]
+
+            data = r.json()
+            # /completion → campo "content"; /v1/chat/completions → choices
+            if "/v1/chat" not in endpoint:
+                raw = data.get("content", "") or ""
             else:
-                raw = r.json()["choices"][0]["message"]["content"]
-            
-            # Strip thinking
+                raw = (data["choices"][0]["message"].get("content") or "")
+
+            # Limpiar thinking tags
             cleaned = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
-            if not cleaned:
-                cleaned = raw[:200]
-            return cleaned, elapsed
+
+            # Limpiar tokens de control de Gemma 4 si aplica
+            if profile and profile.name.startswith("Gemma"):
+                cleaned = self._GEMMA_CTRL_RE.sub('', cleaned).strip()
+
+            return (cleaned or raw[:300]), elapsed
+
         except Exception as e:
             return f"[ERROR] {e}", -1
     
@@ -439,7 +560,7 @@ class MARPPipeline:
         
         # 1. Route
         if not self.router.check():
-            return "[ERROR] Router not available on 8084"
+            return "[ERROR] Router not available on 8082"
         
         domains, confidence, rt_latency = self.router.classify(query)
         
@@ -564,7 +685,7 @@ if __name__ == "__main__":
     
     else:
         print("MARP ModelOrchestrator v1.0")
-        print(f"Router: {'OK' if pipeline.router.check() else 'DOWN'} on :8084")
+        print(f"Router: {'OK' if pipeline.router.check() else 'DOWN'} on :8082")
         print(f"Models: {len(MODEL_REGISTRY)} registered")
         print(f"Logs:   {LOG_DIR}")
         print(f"Use:    --interactive | --benchmark | 'your query'")

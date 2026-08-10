@@ -42,6 +42,18 @@ class TensorNode:
     # Gray-scale verification (H-Bit inspired): multi-bit truth assessment
     gray_scale: Optional[dict] = None  # {dimension: scale_0_to_100, ...}
     
+    # ── Cadena de color (Fase 2, PLAN 2026-08-09) ─────────────────
+    # hue: tono [0,360) heredado del axioma origen (identidad de la cadena)
+    # saturation: λ^depth (profundidad derivacional / certeza)
+    # lineage: ruta completa al centro [axiom_id, ..., node_id]
+    # hue_origin: node_id del axioma origen (None = huérfano)
+    # hue_vector: [cos, sin] resultante cuando el nodo es mezcla de cadenas
+    hue: Optional[float] = None
+    saturation: Optional[float] = None
+    lineage: list[str] = field(default_factory=list)
+    hue_origin: Optional[str] = None
+    hue_vector: Optional[list[float]] = None
+    
     # Metadata
     node_id: Optional[str] = None
     created_at: float = 0.0
@@ -103,12 +115,18 @@ class TensorNode:
             "associations": self.associations,
             "holographic_signature": self.holographic_signature,
             "gray_scale": self.gray_scale,
+            "hue": self.hue,
+            "saturation": self.saturation,
+            "lineage": self.lineage,
+            "hue_origin": self.hue_origin,
+            "hue_vector": self.hue_vector,
             "created_at": self.created_at,
             "access_count": self.access_count,
         }
     
     @classmethod
     def from_dict(cls, d: dict) -> 'TensorNode':
+        # Campos de color con defaults → load() tolera nodos sin colorear
         return cls(
             content=d.get("content", ""),
             hierarchies=d.get("hierarchies", []),
@@ -119,6 +137,11 @@ class TensorNode:
             associations=d.get("associations", []),
             holographic_signature=d.get("holographic_signature"),
             gray_scale=d.get("gray_scale"),
+            hue=d.get("hue"),
+            saturation=d.get("saturation"),
+            lineage=d.get("lineage", []),
+            hue_origin=d.get("hue_origin"),
+            hue_vector=d.get("hue_vector"),
             node_id=d.get("node_id"),
             created_at=d.get("created_at", 0.0),
             access_count=d.get("access_count", 0),

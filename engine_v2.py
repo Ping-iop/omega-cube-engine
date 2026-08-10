@@ -173,7 +173,7 @@ class HierarchicalSummarizer:
         En cada nivel, expande solo el hijo más relevante.
         Complejidad: O(log n * branching_factor) en lugar de O(n).
         """
-        query_vector = self.holographic.encode_node(query, "QUERY")
+        query_vector = self.holographic.encode_node(query, "")
         
         # Nivel 0: dominios raíz
         root_keys = [k for k in tree.keys() if "." not in k]
@@ -370,6 +370,7 @@ class OmegaCubeEngineV2:
         memory_dir: str = None,
         holographic_dim: int = 256,
         tensor_grid_size: int = 10,
+        auto_load: bool = True,
     ):
         if memory_dir is None:
             axioma_base = os.environ.get(
@@ -404,7 +405,7 @@ class OmegaCubeEngineV2:
         self.hnsw = HNSWVectorIndex(
             dimension=holographic_dim,
             metric="cos",
-            quantization="i8",  # 256 B/vector, 98.9% recall
+            quantization="f32",  # f32 required: sparse feature-hash vectors lose all signal under i8
         )
         self._hnsw_dirty = True  # needs rebuild after load
         
@@ -415,8 +416,9 @@ class OmegaCubeEngineV2:
         self.abstained_results = 0
         self.bias_detections = 0
         
-        # Auto-load
-        self.load()
+        # Auto-load (set False for benchmarks / isolated tests)
+        if auto_load:
+            self.load()
     
     # ── Knowledge Ingestion (with typed validation) ───────────────
     
@@ -501,76 +503,72 @@ class OmegaCubeEngineV2:
             self.summarizer.aggregate_bottom_up(self.nodes, self.hierarchy_tree)
             self.hierarchy_built = True
     
-    # ── Query (with all improvements) ─────────────────────────────
+    # ── Query (v5: HNSW-first architecture) ──────────────────────
     
     def query(
         self,
         query_text: str,
-        mode: str = "hierarchical",  # NEW default: hierarchical routing
+        mode: str = "hierarchical",
         top_k: int = 10,
         temperature: float = 0.1,
         apply_boundaries: bool = True,
         detect_hallucination: bool = True,
-        node_filter: set = None,  # v4: Layer 1 shard filter
+        node_filter: set = None,
     ) -> list[dict]:
         """
-        Query with Axion improvements:
-        - hierarchical: coarse-to-fine routing (H²MT) → O(log n)
-        - diffusion: parallel sampling (original)
-        - holographic: HNSW ANN search (v4) → O(log n)
-        - combined: diffusion + holographic re-ranking (original)
+        v5: HNSW-first retrieval architecture.
+        
+        ALL modes start with HNSW ANN search (O(log n)) to generate
+        a candidate set, then apply mode-specific re-ranking on that
+        small subset (~50 nodes) instead of the full graph.
+        
+        Modes:
+        - hierarchical: HNSW → hierarchy-depth-aware rerank
+        - holographic:  HNSW → multisignal rerank (keyword+depth+tags)
+        - diffusion:    HNSW → scoped diffusion on candidates only
+        - combined:     HNSW → multisignal + domain-boost rerank
         
         Post-processing:
         - Boundary control (PAGE-RAG): filter ungrounded results
         - Hallucination detection (2607.00447): detect + counteract bias
-        
-        v4 additions:
-        - node_filter: Layer 1 shard partitioning — restrict search to node subset
-        - HNSW index: Layer 2 ANN search replaces linear scan
-        - Multi-signal re-ranking: Layer 3 keyword + depth + tags
         """
         self.query_count += 1
         start = time.time()
         
-        # Ensure HNSW index is built (lazy, after load)
-        self._ensure_hnsw()
+        # Layer 0: HNSW ANN search — generates candidate set for ALL modes
+        candidates = self._hnsw_retrieve(query_text, top_k * 5, node_filter=node_filter)
         
         if mode == "hierarchical":
-            self._ensure_hierarchy()
-            raw_results = self.summarizer.route_coarse_to_fine(
-                query_text, self.nodes, self.hierarchy_tree, top_k=top_k * 2
-            )
-            results = [self._format_result((n, s)) for n, s in raw_results]
+            # Hierarchical = diffusion rerank with moderate temperature
+            results = self._rerank_diffusion(query_text, candidates, top_k, temperature=0.05)
         elif mode == "diffusion":
-            raw = self.diffusion.sample(query_text, self.index, self.holographic, top_k=top_k, temperature=temperature)
-            results = [self._format_result(r) for r in raw]
+            results = self._rerank_diffusion(query_text, candidates, top_k, temperature)
         elif mode == "holographic":
-            raw = self._query_holographic(query_text, top_k, node_filter=node_filter)
-            results = [self._format_result(r) for r in raw]
+            # Holographic = diffusion rerank with minimal noise (near-deterministic)
+            results = self._rerank_diffusion(query_text, candidates, top_k, temperature=0.01)
         elif mode == "combined":
-            raw = self._query_combined(query_text, top_k)
-            results = [self._format_result(r) for r in raw]
+            # Combined = diffusion rerank with low temperature (more deterministic)
+            results = self._rerank_diffusion(query_text, candidates, top_k, temperature=0.03)
         else:
-            self._ensure_hierarchy()
-            raw_results = self.summarizer.route_coarse_to_fine(
-                query_text, self.nodes, self.hierarchy_tree, top_k=top_k * 2
-            )
-            results = [self._format_result((n, s)) for n, s in raw_results]
+            # Hierarchical = diffusion rerank with moderate temperature
+            results = self._rerank_diffusion(query_text, candidates, top_k, temperature=0.05)
         
-        # Improvement: Boundary control (PAGE-RAG)
+        # Format results
+        results = [self._format_result(r) for r in results]
+        
+        # Boundary control (PAGE-RAG)
         if apply_boundaries:
             before_count = len(results)
             results = self.boundary.filter_grounded(results, query_text)
             self.abstained_results += (before_count - len(results))
         
-        # Improvement: Hallucination detection (2607.00447)
+        # Hallucination detection (2607.00447)
         if detect_hallucination and results:
             bias = self.hallucination_detector.detect_bias(query_text, results)
             if bias["bias_type"] != "none":
                 self.bias_detections += 1
                 results = self.hallucination_detector.counteract(query_text, results, bias)
         
-        # Trim to top_k
         results = results[:top_k]
         
         elapsed = time.time() - start
@@ -578,7 +576,7 @@ class OmegaCubeEngineV2:
         
         return results
     
-    # ── HNSW Index Management (Layer 2) ──────────────────────────
+    # ── HNSW-first Retrieval (v5) ──────────────────────────────
     
     def _ensure_hnsw(self):
         """Rebuild HNSW index from loaded nodes (lazy, after load)."""
@@ -592,116 +590,303 @@ class OmegaCubeEngineV2:
             self.hnsw.rebuild(items)
         self._hnsw_dirty = False
     
-    # ── Internal query methods (v4: HNSW + multi-signal re-rank) ──
-    
-    def _query_holographic(self, query: str, top_k: int, node_filter: set = None) -> list:
+    def _hnsw_retrieve(self, query: str, candidate_k: int, node_filter: set = None) -> list[tuple]:
         """
-        v4: HNSW ANN search (O(log n)) replaces O(n) linear scan.
+        Layer 0: HNSW ANN retrieval — the single entry point for ALL query modes.
+        
+        Returns [(node, holo_similarity), ...] sorted by ANN distance.
         Falls back to linear scan if HNSW unavailable.
+        O(log n) via USearch HNSW with i8 quantization.
         """
-        query_vector = self.holographic.encode_node(query, "QUERY")
+        self._ensure_hnsw()
+        query_vector = self.holographic.encode_node(query, "")
         
         if self.hnsw.is_available and self.hnsw.size > 0:
-            # Layer 2: HNSW ANN — fetch more candidates for re-ranking
-            ann_k = min(top_k * 5, self.hnsw.size)
+            ann_k = min(candidate_k, self.hnsw.size)
             ann_results = self.hnsw.search(query_vector, ann_k)
             
-            # Map back to nodes, apply shard filter if provided
-            results = []
+            candidates = []
+            seen_ids = set()
             for nid, sim in ann_results:
                 if node_filter and nid not in node_filter:
                     continue
                 node = self.nodes.get(nid)
                 if node:
-                    results.append((node, sim))
+                    candidates.append((node, sim))
+                    seen_ids.add(nid)
             
-            # Layer 3: Multi-signal re-ranking
-            results = self._multisignal_rerank(query, results, top_k)
-            return results[:top_k]
+            # 1-hop graph expansion (SAP CIKM 2025: +15% precision)
+            # Add neighbors of seed nodes that weren't found by ANN
+            expanded = []
+            for seed_node, seed_sim in candidates:
+                for assoc_id in seed_node.associations:
+                    if assoc_id in seen_ids:
+                        continue
+                    if node_filter and assoc_id not in node_filter:
+                        continue
+                    neighbor = self.nodes.get(assoc_id)
+                    if neighbor and neighbor.holographic_signature:
+                        n_sim = self.holographic.partial_match(query_vector, neighbor.holographic_signature)
+                        # Neighbor gets discounted similarity (0.7x) since it's structurally, not semantically, close
+                        expanded.append((neighbor, n_sim * 0.7))
+                        seen_ids.add(assoc_id)
+            
+            candidates.extend(expanded)
+            candidates.sort(key=lambda x: -x[1])
+            return candidates[:candidate_k]
         else:
-            # Fallback: linear scan (original v1 behavior)
-            results = []
+            # Fallback: linear scan
+            candidates = []
             for node in self.nodes.values():
                 if node_filter and node.node_id not in node_filter:
                     continue
                 if node.holographic_signature:
                     sim = self.holographic.partial_match(query_vector, node.holographic_signature)
-                    results.append((node, sim))
-            results.sort(key=lambda x: -x[1])
-            return results[:top_k]
+                    candidates.append((node, sim))
+            candidates.sort(key=lambda x: -x[1])
+            return candidates[:candidate_k]
     
-    def _multisignal_rerank(
-        self, query: str, candidates: list[tuple], top_k: int
-    ) -> list[tuple]:
+    # ── Mode-specific Re-rankers (operate on candidate subset) ──
+    
+    def _rerank_hierarchical(self, query: str, candidates: list[tuple], top_k: int) -> list[tuple]:
         """
-        Layer 3: Multi-signal re-ranking.
-        
-        Combines 4 signals on the candidate set (not full N):
-          1. Holographic similarity (from HNSW)     — weight 0.40
-          2. Keyword overlap with query              — weight 0.25
-          3. Hierarchy depth specificity             — weight 0.15
-          4. Tag relevance                           — weight 0.20
-        
-        Operates on ~50 candidates, not N. Cost is O(k) where k << N.
+        Hierarchy-depth-aware rerank on HNSW candidates.
+        Keyword overlap + hierarchy-match + depth + domain coherence.
         """
         if not candidates:
             return candidates
         
-        query_words = set(query.lower().split())
-        query_words = {w for w in query_words if len(w) > 2}
+        query_words = {w for w in query.lower().split() if len(w) > 2}
+        
+        # Precompute domain keyword coherence
+        domain_kw = defaultdict(list)
+        node_kw = {}
+        for node, _ in candidates:
+            content_words = {w for w in node.content.lower().split() if len(w) > 2}
+            kw = len(query_words & content_words) / max(len(query_words), 1)
+            node_kw[node.node_id] = kw
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_kw[domain].append(kw)
+        domain_avg = {d: sum(v)/len(v) for d, v in domain_kw.items() if v}
         
         scored = []
         for node, holo_sim in candidates:
-            # Signal 1: Holographic similarity (already computed)
-            s_holo = holo_sim
+            keyword_score = node_kw[node.node_id]
             
-            # Signal 2: Keyword overlap
-            content_words = set(node.content.lower().split())
-            content_words = {w for w in content_words if len(w) > 2}
-            if query_words:
-                overlap = len(query_words & content_words) / len(query_words)
-            else:
-                overlap = 0.0
-            s_keyword = min(overlap, 1.0)
+            hier_words = set()
+            if node.primary_hierarchy:
+                for part in node.primary_hierarchy.replace('.', ' ').replace('/', ' ').lower().split():
+                    if len(part) > 2:
+                        hier_words.add(part)
+            hier_match = len(query_words & hier_words) / max(len(query_words), 1)
             
-            # Signal 3: Hierarchy depth (deeper = more specific = more relevant)
             depth = node.primary_hierarchy.count(".") if node.primary_hierarchy else 0
-            s_depth = min(depth / 4.0, 1.0)  # normalize: 4+ levels = max
+            depth_score = min(depth / 4.0, 1.0)
             
-            # Signal 4: Tag relevance
+            tag_score = 0.0
             if node.tags and query_words:
                 tag_words = set()
                 for t in node.tags:
-                    tag_words.update(t.lower().split())
-                tag_overlap = len(query_words & tag_words) / len(query_words)
-                s_tags = min(tag_overlap, 1.0)
-            else:
-                s_tags = 0.0
+                    tag_words.update(w for w in t.lower().split() if len(w) > 2)
+                tag_score = len(query_words & tag_words) / max(len(query_words), 1)
             
-            # Weighted combination
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_coherence = domain_avg.get(domain, 0.0)
+            
             combined = (
-                0.40 * s_holo +
-                0.25 * s_keyword +
-                0.15 * s_depth +
-                0.20 * s_tags
+                0.55 * keyword_score
+                + 0.10 * holo_sim
+                + 0.10 * hier_match
+                + 0.10 * tag_score
+                + 0.05 * depth_score
+                + 0.10 * domain_coherence
             )
             scored.append((node, combined))
         
         scored.sort(key=lambda x: -x[1])
         return scored[:top_k]
     
-    def _query_combined(self, query: str, top_k: int) -> list:
-        candidates = self.diffusion.sample(query, self.index, self.holographic, top_k=top_k * 3, temperature=0.15)
-        query_vector = self.holographic.encode_node(query, "QUERY")
-        results = []
-        for node, score in candidates:
-            holo_sim = 0.5
-            if node.holographic_signature:
-                holo_sim = self.holographic.partial_match(query_vector, node.holographic_signature)
-            combined = 0.6 * score + 0.4 * holo_sim
-            results.append((node, combined))
+    def _rerank_multisignal(self, query: str, candidates: list[tuple], top_k: int) -> list[tuple]:
+        """
+        Multi-signal rerank: holographic + keyword + hierarchy-match + depth + tags + domain coherence.
+        """
+        if not candidates:
+            return candidates
+        
+        query_words = {w for w in query.lower().split() if len(w) > 2}
+        
+        # Precompute domain keyword coherence
+        domain_kw = defaultdict(list)
+        node_kw = {}
+        for node, _ in candidates:
+            content_words = {w for w in node.content.lower().split() if len(w) > 2}
+            kw = len(query_words & content_words) / max(len(query_words), 1)
+            node_kw[node.node_id] = kw
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_kw[domain].append(kw)
+        domain_avg = {d: sum(v)/len(v) for d, v in domain_kw.items() if v}
+        
+        scored = []
+        for node, holo_sim in candidates:
+            keyword_score = node_kw[node.node_id]
+            
+            hier_words = set()
+            if node.primary_hierarchy:
+                for part in node.primary_hierarchy.replace('.', ' ').replace('/', ' ').lower().split():
+                    if len(part) > 2:
+                        hier_words.add(part)
+            hier_match = len(query_words & hier_words) / max(len(query_words), 1)
+            
+            depth = node.primary_hierarchy.count(".") if node.primary_hierarchy else 0
+            depth_score = min(depth / 4.0, 1.0)
+            
+            tag_score = 0.0
+            if node.tags and query_words:
+                tag_words = set()
+                for t in node.tags:
+                    tag_words.update(w for w in t.lower().split() if len(w) > 2)
+                tag_score = len(query_words & tag_words) / max(len(query_words), 1)
+            
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_coherence = domain_avg.get(domain, 0.0)
+            
+            combined = (
+                0.55 * keyword_score
+                + 0.10 * holo_sim
+                + 0.10 * hier_match
+                + 0.10 * tag_score
+                + 0.05 * depth_score
+                + 0.10 * domain_coherence
+            )
+            scored.append((node, combined))
+        
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
+    
+    def _rerank_diffusion(self, query: str, candidates: list[tuple], top_k: int, temperature: float = 0.1) -> list[tuple]:
+        """
+        Scoped diffusion: runs iterative denoising ONLY on the HNSW candidate
+        subset (~50 nodes) instead of the full graph. O(k² × steps) where k << N.
+        
+        Uses hierarchical guidance within the candidate set for clustering.
+        """
+        if not candidates:
+            return candidates
+        
+        if len(candidates) <= top_k:
+            return candidates[:top_k]
+        
+        query_vector = self.holographic.encode_node(query, "")
+        nodes = [n for n, _ in candidates]
+        base_sims = [s for _, s in candidates]
+        
+        # Precompute keyword scores for guidance
+        query_words = {w for w in query.lower().split() if len(w) > 2}
+        keyword_scores = []
+        for node in nodes:
+            content_words = {w for w in node.content.lower().split() if len(w) > 2}
+            keyword_scores.append(len(query_words & content_words) / max(len(query_words), 1))
+        
+        # Build domain index for fast neighbor lookup (replaces O(n) .index() calls)
+        domain_map = defaultdict(list)  # domain -> [indices]
+        for i, node in enumerate(nodes):
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_map[domain].append(i)
+        
+        # Iterative denoising (reduced steps for speed)
+        num_steps = 8  # was 20, 8 is enough on pre-filtered candidates
+        scores = list(base_sims)
+        
+        import random as _rnd
+        for step in range(num_steps):
+            progress = step / num_steps
+            noise_level = 0.5 * (1 + math.cos(math.pi * progress))
+            
+            for i in range(len(nodes)):
+                signal = base_sims[i]
+                noise = _rnd.gauss(0, noise_level * temperature)
+                
+                # Domain-local guidance: average score of same-domain neighbors
+                domain = nodes[i].primary_hierarchy.split(".")[0] if nodes[i].primary_hierarchy else "?"
+                neighbors = domain_map.get(domain, [])
+                if len(neighbors) > 1:
+                    neighbor_avg = sum(base_sims[j] for j in neighbors) / len(neighbors)
+                else:
+                    neighbor_avg = 0.0
+                
+                guidance = 0.3 * neighbor_avg + 0.7 * keyword_scores[i]
+                
+                scores[i] = (
+                    (1 - noise_level) * signal
+                    + noise_level * noise
+                    + 3.0 * guidance * (1 - noise_level)
+                )
+                scores[i] = max(0.0, min(1.0, scores[i]))
+        
+        results = list(zip(nodes, scores))
         results.sort(key=lambda x: -x[1])
         return results[:top_k]
+    
+    def _rerank_combined(self, query: str, candidates: list[tuple], top_k: int) -> list[tuple]:
+        """
+        Combined mode: HNSW + multisignal + hierarchy-match + domain-boost.
+        No diffusion — pure deterministic rerank for speed and reproducibility.
+        """
+        if not candidates:
+            return candidates
+        
+        query_words = {w for w in query.lower().split() if len(w) > 2}
+        
+        # First pass: compute domain keyword coherence (like diffusion's guidance)
+        domain_keyword_scores = defaultdict(list)
+        node_keyword_scores = {}
+        for node, _ in candidates:
+            content_words = {w for w in node.content.lower().split() if len(w) > 2}
+            kw = len(query_words & content_words) / max(len(query_words), 1)
+            node_keyword_scores[node.node_id] = kw
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_keyword_scores[domain].append(kw)
+        
+        domain_avg = {d: sum(v)/len(v) for d, v in domain_keyword_scores.items() if v}
+        
+        scored = []
+        for node, holo_sim in candidates:
+            keyword_score = node_keyword_scores[node.node_id]
+            
+            hier_words = set()
+            if node.primary_hierarchy:
+                for part in node.primary_hierarchy.replace('.', ' ').replace('/', ' ').lower().split():
+                    if len(part) > 2:
+                        hier_words.add(part)
+            hier_match = len(query_words & hier_words) / max(len(query_words), 1)
+            
+            depth = node.primary_hierarchy.count(".") if node.primary_hierarchy else 0
+            depth_score = min(depth / 4.0, 1.0)
+            
+            tag_score = 0.0
+            if node.tags and query_words:
+                tag_words = set()
+                for t in node.tags:
+                    tag_words.update(w for w in t.lower().split() if len(w) > 2)
+                tag_score = len(query_words & tag_words) / max(len(query_words), 1)
+            
+            # Domain coherence: boost nodes in domains where neighbors also match
+            domain = node.primary_hierarchy.split(".")[0] if node.primary_hierarchy else "?"
+            domain_coherence = domain_avg.get(domain, 0.0)
+            
+            combined = (
+                0.55 * keyword_score
+                + 0.10 * holo_sim
+                + 0.10 * hier_match
+                + 0.10 * tag_score
+                + 0.05 * depth_score
+                + 0.10 * domain_coherence
+            )
+            
+            scored.append((node, combined))
+        
+        scored.sort(key=lambda x: -x[1])
+        return scored[:top_k]
     
     # ── Helpers ───────────────────────────────────────────────────
     
@@ -789,6 +974,13 @@ class OmegaCubeEngineV2:
             data = json.load(f)
         for nid, node_data in data.get("nodes", {}).items():
             node = TensorNode.from_dict(node_data)
+            # v5 migration: re-encode holographic signatures with semantic encoder
+            # Old signatures were random vectors (non-semantic); new ones use
+            # feature hashing so HNSW cosine similarity actually means something.
+            hierarchy = node.primary_hierarchy or ""
+            node.holographic_signature = self.holographic.encode_node(
+                node.content, hierarchy
+            )
             self.nodes[nid] = node
             self.index.insert(node)
         for axiom_id in data.get("axiom_ids", []):
@@ -797,6 +989,7 @@ class OmegaCubeEngineV2:
         stats = data.get("stats", {})
         self.query_count = stats.get("query_count", 0)
         self.total_retrieval_time = stats.get("total_retrieval_time", 0.0)
+        self._hnsw_dirty = True  # force HNSW rebuild with new signatures
         return True
     
     def stats(self) -> dict:

@@ -24,7 +24,7 @@ Si thinking consume todos los tokens sin completar la respuesta, se re-consulta 
 ### Servidores requeridos
 ```bash
 # Router Qwen0.8B (siempre activo)
-llama-server -m J:/modelos_ia/qwen3.5-0.8b-instruct-Q4_K_M.gguf -ngl 99 -c 256 --port 8084 --host 127.0.0.1
+llama-server -m J:/modelos_ia/qwen3.5-0.8b-instruct-Q4_K_M.gguf -ngl 99 -c 256 --port 8084 --host 127.0.0.1 --reasoning-format none
 
 # Worker Qwen 27B Omni 
 llama-server -m J:/modelos_ia/Qwen3.6-27B-Omni-v4-Q4_K_M.gguf -ngl 99 -c 4096 --port 8082 --host 127.0.0.1 --mlock --reasoning-format none

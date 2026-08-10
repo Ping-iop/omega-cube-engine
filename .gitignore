@@ -1,1 +1,4 @@
 __pycache__/
+*.log
+cube_state.json
+context_state.json
