@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omega-Cube Dashboard</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --border-color: #334155;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.1rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-green);
+            margin: 1rem 0;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .bar-chart {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, var(--accent-blue), var(--accent-purple));
+            border-radius: 4px 4px 0 0;
+            min-height: 20px;
+            position: relative;
+            transition: height 0.3s ease;
+        }
+        
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        
+        .node-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .node-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .node-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .node-content {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .node-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .tag {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .hierarchy-tree {
+            padding-left: 1.5rem;
+            border-left: 2px solid var(--border-color);
+        }
+        
+        .hierarchy-item {
+            padding: 0.5rem 0;
+            cursor: pointer;
+        }
+        
+        .hierarchy-item:hover {
+            color: var(--accent-blue);
+        }
+        
+        .conflict-alert {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--accent-orange);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .conflict-severity-high {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+        }
+        
+        .conflict-severity-medium {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: #f59e0b;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #fca5a5;
+        }
+        
+        .refresh-btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .refresh-btn:hover {
+            background: var(--accent-purple);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧊 Omega-Cube Dashboard</h1>
+            <p class="subtitle">Visualización del grafo de memoria axiomática</p>
+            <button class="refresh-btn" onclick="loadData()">🔄 Actualizar Datos</button>
+        </header>
+
+        <div id="loading" class="loading">Cargando datos...</div>
+        <div id="error" class="error-message" style="display:none;"></div>
+        
+        <div id="content" style="display:none;">
+            <!-- Stats Overview -->
+            <div class="grid">
+                <div class="card">
+                    <h2>📊 Total de Nodos</h2>
+                    <div class="stat-value" id="total-nodes">0</div>
+                    <p class="stat-label">Nodos en el grafo</p>
+                </div>
+                
+                <div class="card">
+                    <h2>🏷️ Tipos de Nodo</h2>
+                    <div id="type-distribution" class="chart-container"></div>
+                </div>
+                
+                <div class="card">
+                    <h2>🔍 Consultas Realizadas</h2>
+                    <div class="stat-value" id="query-count">0</div>
+                    <p class="stat-label">Última consulta: <span id="last-query">N/A</span></p>
+                </div>
+            </div>
+
+            <!-- Hierarchy Overview -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <h2>🌳 Jerarquías Principales</h2>
+                <div id="hierarchies-overview"></div>
+            </div>
+
+            <!-- Recent Nodes -->
+            <div class="card">
+                <h2>📝 Últimos Nodos Agregados</h2>
+                <div id="recent-nodes" class="node-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let graphData = null;
+
+        async function loadData() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const contentEl = document.getElementById('content');
+            
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            contentEl.style.display = 'none';
+            
+            try {
+                // In a real scenario, this would fetch from an API
+                // For now, we'll use the local JSON file directly via fetch if served
+                
+                // Simulated data structure for demo (replace with actual API call)
+                const response = await fetch('memory/omega_cube_memory.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                graphData = await response.json();
+                renderDashboard(graphData);
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading data:', error);
+                loadingEl.style.display = 'none';
+                errorEl.textContent = `Error al cargar datos: ${error.message}`;
+                errorEl.style.display = 'block';
+                
+                // Fallback with sample data for demonstration
+                loadSampleData();
+            }
+        }
+
+        function loadSampleData() {
+            graphData = {
+                nodes: {
+                    "87e985295105fc80": {
+                        node_id: "87e985295105fc80",
+                        content: "Ranged PvP: Marcian es #1, Charles VI es #2. Minamoto ya no es top.",
+                        hierarchies: ["EVONY.GENERALS.RANGED", "EVONY.META.PVP_2026"],
+                        node_type: "CONCEPT",
+                        confidence: 0.9,
+                        tags: ["evony", "guia"]
+                    }
+                },
+                stats: {
+                    total_nodes: 18,
+                    type_distribution: {"CONCEPT": 14, "AXIOM": 3, "SESSION": 1},
+                    query_count: 0,
+                    last_query: null
+                }
+            };
+            renderDashboard(graphData);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+
+        function renderDashboard(data) {
+            // Update stats
+            const totalNodes = Object.keys(data.nodes).length;
+            document.getElementById('total-nodes').textContent = totalNodes;
+            
+            if (data.stats) {
+                document.getElementById('query-count').textContent = data.stats.query_count || 0;
+                document.getElementById('last-query').textContent = 
+                    data.stats.last_query ? new Date(data.stats.last_query).toLocaleString() : 'N/A';
+                
+                // Update type distribution chart
+                renderTypeDistribution(data.stats.type_distribution || {});
+            }
+            
+            // Render hierarchies overview
+            renderHierarchiesOverview(data.nodes);
+            
+            // Render recent nodes
+            renderRecentNodes(data.nodes);
+        }
+
+        function renderTypeDistribution(distribution) {
+            const container = document.getElementById('type-distribution');
+            const maxCount = Math.max(...Object.values(distribution), 1);
+            
+            let html = '<div class="bar-chart">';
+            
+            for (const [type, count] of Object.entries(distribution)) {
+                const height = (count / maxCount) * 100;
+                html += `
+                    <div class="bar" style="height: ${height}%">
+                        <div class="bar-value">${count}</div>
+                        <div class="bar-label">${type}</div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderHierarchiesOverview(nodes) {
+            const container = document.getElementById('hierarchies-overview');
+            const hierarchyCounts = {};
+            
+            // Count occurrences of each top-level hierarchy
+            for (const node of Object.values(nodes)) {
+                if (node.hierarchies && Array.isArray(node.hierarchies)) {
+                    for (const hier of node.hierarchies) {
+                        const topLevel = hier.split('.')[0];
+                        hierarchyCounts[topLevel] = (hierarchyCounts[topLevel] || 0) + 1;
+                    }
+                }
+            }
+            
+            // Sort by count and take top 10
+            const sortedHierarchies = Object.entries(hierarchyCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            let html = '<div class="hierarchy-tree">';
+            for (const [hier, count] of sortedHierarchies) {
+                html += `
+                    <div class="hierarchy-item">
+                        <strong>${hier}</strong>: ${count} nodos
+                    </div>
+                `;
+            }
+            html += '</div>';
+            
+            container.innerHTML = html || '<p style="color: var(--text-secondary);">No hay jerarquías registradas</p>';
+        }
+
+        function renderRecentNodes(nodes) {
+            const container = document.getElementById('recent-nodes');
+            const nodeArray = Object.values(nodes).slice(0, 20); // Show last 20
+            
+            if (nodeArray.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); padding: 1rem;">No hay nodos registrados</p>';
+                return;
+            }
+            
+            let html = '';
+            for (const node of nodeArray) {
+                const hierarchies = node.hierarchies ? node.hierarchies.join(', ') : 'Sin jerarquía';
+                const tags = node.tags ? node.tags.map(t => `<span class="tag">${t}</span>`).join('') : '';
+                
+                html += `
+                    <div class="node-item">
+                        <div class="node-content">${node.content || 'Sin contenido'}</div>
+                        <div class="node-meta">
+                            <span>📁 ${hierarchies}</span>
+                            ${tags}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Load data on page load
+        window.addEventListener('load', loadData);
+    </script>
+</body>
+</html>

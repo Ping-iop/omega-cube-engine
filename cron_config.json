@@ -1,0 +1,24 @@
+{
+  "cron_jobs": [
+    {
+      "name": "Omega-Cube Indexer",
+      "schedule": "0 */6 * * *",
+      "description": "Ejecutar indexer cada 6 horas para mantener Omega-Cube sincronizado con fabric entries",
+      "script": "scripts/index_and_notify.sh",
+      "working_dir": ".",
+      "enabled": true,
+      "log_file": "logs/indexer.log"
+    }
+  ],
+  "notifications": {
+    "on_success": false,
+    "on_error": true,
+    "delivery_method": "local_log"
+  },
+  "logging": {
+    "enabled": true,
+    "path": "logs/indexer.log",
+    "max_size_mb": 10,
+    "rotation": "daily"
+  }
+}

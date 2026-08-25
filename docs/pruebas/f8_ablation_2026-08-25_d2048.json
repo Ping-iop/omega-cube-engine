@@ -1,0 +1,60 @@
+{
+  "date": "2026-08-25",
+  "seed": 42,
+  "k": 5,
+  "dim": 2048,
+  "summary": {
+    "plano-coseno": {
+      "precision_at_k": 0.14,
+      "recall_at_k": 0.7,
+      "f1_at_k": 0.2333,
+      "mrr": 0.4454,
+      "latency_ms_mean": 0.8,
+      "f1_by_type": {
+        "directa": 0.275,
+        "reformulada": 0.1333,
+        "solo-vecino": 0.2991,
+        "solo-vecino-degenerada": 0.0
+      }
+    },
+    "cm-2D-solo": {
+      "precision_at_k": 0.1383,
+      "recall_at_k": 0.6917,
+      "f1_at_k": 0.2306,
+      "mrr": 0.4438,
+      "latency_ms_mean": 81.4,
+      "f1_by_type": {
+        "directa": 0.2667,
+        "reformulada": 0.1333,
+        "solo-vecino": 0.2991,
+        "solo-vecino-degenerada": 0.0
+      }
+    },
+    "cm-full": {
+      "precision_at_k": 0.095,
+      "recall_at_k": 0.475,
+      "f1_at_k": 0.1583,
+      "mrr": 0.3585,
+      "latency_ms_mean": 80.5,
+      "f1_by_type": {
+        "directa": 0.1667,
+        "reformulada": 0.025,
+        "solo-vecino": 0.2906,
+        "solo-vecino-degenerada": 0.0
+      }
+    },
+    "cm-full-tau0": {
+      "precision_at_k": 0.14,
+      "recall_at_k": 0.7,
+      "f1_at_k": 0.2333,
+      "mrr": 0.4454,
+      "latency_ms_mean": 85.1,
+      "f1_by_type": {
+        "directa": 0.275,
+        "reformulada": 0.1333,
+        "solo-vecino": 0.2991,
+        "solo-vecino-degenerada": 0.0
+      }
+    }
+  }
+}

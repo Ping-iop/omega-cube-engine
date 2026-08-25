@@ -1,0 +1,93 @@
+{
+  "date": "2026-08-25",
+  "seed": 42,
+  "k": 5,
+  "n_nodes": 1028,
+  "n_edges": 2844,
+  "n_questions": 120,
+  "questions_by_type": {
+    "directa": 40,
+    "reformulada": 40,
+    "solo-vecino": 39,
+    "solo-vecino-degenerada": 1
+  },
+  "summary": {
+    "plano-coseno": {
+      "precision_at_k": 0.09,
+      "recall_at_k": 0.45,
+      "f1_at_k": 0.15,
+      "mrr": 0.3185,
+      "latency_ms_mean": 0.25,
+      "by_type": {
+        "directa": {
+          "f1": 0.1333,
+          "recall": 0.4
+        },
+        "reformulada": {
+          "f1": 0.0417,
+          "recall": 0.125
+        },
+        "solo-vecino": {
+          "f1": 0.2821,
+          "recall": 0.8462
+        },
+        "solo-vecino-degenerada": {
+          "f1": 0.0,
+          "recall": 0.0
+        }
+      }
+    },
+    "cube_move": {
+      "precision_at_k": 0.0833,
+      "recall_at_k": 0.4167,
+      "f1_at_k": 0.1389,
+      "mrr": 0.296,
+      "latency_ms_mean": 12.68,
+      "by_type": {
+        "directa": {
+          "f1": 0.1167,
+          "recall": 0.35
+        },
+        "reformulada": {
+          "f1": 0.0333,
+          "recall": 0.1
+        },
+        "solo-vecino": {
+          "f1": 0.2735,
+          "recall": 0.8205
+        },
+        "solo-vecino-degenerada": {
+          "f1": 0.0,
+          "recall": 0.0
+        }
+      }
+    },
+    "engine-v2-jerarquico": {
+      "precision_at_k": 0.0983,
+      "recall_at_k": 0.4917,
+      "f1_at_k": 0.1639,
+      "mrr": 0.3319,
+      "latency_ms_mean": 46.62,
+      "by_type": {
+        "directa": {
+          "f1": 0.1667,
+          "recall": 0.5
+        },
+        "reformulada": {
+          "f1": 0.05,
+          "recall": 0.15
+        },
+        "solo-vecino": {
+          "f1": 0.2821,
+          "recall": 0.8462
+        },
+        "solo-vecino-degenerada": {
+          "f1": 0.0,
+          "recall": 0.0
+        }
+      }
+    }
+  },
+  "margin_pp": 1.4,
+  "verdict": "MATIZADA"
+}
