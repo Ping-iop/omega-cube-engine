@@ -100,8 +100,8 @@ Quedan 2 nodos sin cadena de tono (41→2).
 
 ### P1.11 — El motor no tiene respaldo remoto
 Protocolo en GitHub ✓; motor (cube_move, cadena de color, gate, benchmarks) solo en `.hermes`. Último commit menciona "2 repos fuentes de verdad" pero `omega-cube-engine` no está localizado.
-- [ ] Verificar si existe `omega-cube-engine` en remoto (GitHub)
-- [ ] Si no: crear repo y empujar (excluyendo `memory/` personal)
+- [x] Verificar si existe `omega-cube-engine` en remoto (GitHub) — **HECHA 2026-08-25**: existe (`Ping-iop/omega-cube-engine`, público, master), estaba 15 días desactualizado (último push 2026-08-10)
+- [x] Si no: crear repo y empujar (excluyendo `memory/` personal) — **HECHA 2026-08-25**: repo ya existía → sincronizado en su lugar. Espejo completo del despliegue activo: paquete `omega_cube/` (78 archivos, layout v2 con `marp/`), scripts, docs, planes; retirados del HEAD los muertos (monitores duplicados, material outreach/paper plano). Sin credenciales (cron_config.json verificado). Commit `0d2319c`, push a master verificado vía API
 
 ---
 
