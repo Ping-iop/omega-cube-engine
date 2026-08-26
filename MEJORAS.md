@@ -111,32 +111,32 @@ Protocolo en GitHub ✓; motor (cube_move, cadena de color, gate, benchmarks) so
 
 ### P2.A — Tests primero (fase 2 del roadmap)
 Hoy ~9% cobertura (506 líneas de test vs ~5.700 de código).
-- [ ] Tests unitarios de `domain_reasoner` (veto APPROVED/VETOED/FLAGGED) — objetivo >80%
-- [ ] Tests unitarios de `axiom_registry` (condiciones de contorno)
+- [x] Tests unitarios de `domain_reasoner` (veto APPROVED/VETOED/FLAGGED) — objetivo >80% — **HECHA 2026-08-25**: `tests/test_domain_reasoner.py` (12 casos): veto temprano del query sin invocar al LLM, salida APPROVED/FLAGGED/VETOED según contenido, composición RAG, prompt builder, certificación de origen. Módulo a **100%** cobertura (junto con registry: 171/171 statements). Commit `5334305` push a master
+- [x] Tests unitarios de `axiom_registry` (condiciones de contorno) — **HECHA 2026-08-25**: `tests/test_axiom_registry.py` (11 casos): inmutabilidad, Capa 0 exige confianza 1.0, unicidad del registro, consultas por dominio/capa/tags, boundary conditions (desactivación por env var, fallo seguro→activo, inmunidad de Capa 0). Módulo a **100%** cobertura. Commit `5334305` push a master
 
 ### P2.B — Empaquetado (fase 3)
-- [ ] `pyproject.toml` + CLI `axioma query "..." --domain PHYSICS`
+- [x] `pyproject.toml` + CLI `axioma query "..." --domain PHYSICS` — **HECHA 2026-08-25**: paquete instalable (`pip install -e .`, cero dependencias obligatorias, extras por proveedor), entry point `axioma=src.cli:main` verificado en venv limpio; CLI con adapters mock (default, sin red) y ollama. Bonus: fix real de duplicación de axiomas ATOMIC en el contexto del reasoner (11→7 en PHYSICS) con test de regresión. Commit `1cd79a0` push a master
 
 ### P2.C — Higiene rápida (fase 1)
-- [ ] `requirements.txt`: descomentar lo mínimo real
-- [ ] Commitear o borrar `IDEA.md` (30 bytes sueltos)
-- [ ] Mover `Documentation/` → `docs/teoria/`
+- [x] `requirements.txt`: descomentar lo mínimo real — **HECHA 2026-08-25**: `requests>=2.31` activada (única importación real en `src/`, usada por `GenericHTTPAdapter`); el resto queda comentado como menú opcional por proveedor
+- [x] Commitear o borrar `IDEA.md` (30 bytes sueltos) — **HECHA 2026-08-25**: borrado (era una sola línea "Axioma Omega protocol - Axion", sin contenido útil)
+- [x] Mover `Documentation/` → `docs/teoria/` — **HECHA 2026-08-25**: movida con `git mv` (historial preservado); teoría del protocolo (v1/v2/v3, anexos matemáticos, análisis) ahora junto al resto de docs. Commit `1e9162a` push a master; suite 56 passed tras el movimiento
 
 ### P2.D — Esquema compartido protocolo ↔ motor (NO contemplado en su roadmap)
 Dos definiciones paralelas de "verdad": `Axiom/AxiomLayer/ValidationVerdict` (protocolo) vs AXIOM/CONCEPT/INSTANCE + gate con veredictos string (motor).
-- [ ] Extraer dataclasses comunes (axioma, veredicto, capas de certeza) a módulo mínimo compartido, **o** documentar mapeo oficial capas ATOMIC/DOMAIN/SITUATIONAL/CREATIVE ↔ depth/saturación λ^depth
+- [x] Extraer dataclasses comunes (axioma, veredicto, capas de certeza) a módulo mínimo compartido, **o** documentar mapeo oficial capas ATOMIC/DOMAIN/SITUATIONAL/CREATIVE ↔ depth/saturación λ^depth — **HECHA 2026-08-25** (opción documentar): `docs/MAPEO_VERDADES.md` en ambos repos — tabla de equivalencias capas↔nodos/saturación, veredictos idénticos como strings, NO-equivalencias explícitas (confidence ≠ saturation) y regla de sincronización. Decisión: NO extraer módulo compartido (~10 definiciones estables, dos repos desplegados por separado, acoplamiento sin beneficio). Commits `c425863` (protocolo) y espejo en omega-cube-engine
 
 ### P2.E — Sincronizar biblioteca de axiomas ↔ grafo vivo
 `standard_library.py`: 20 axiomas en 13 dominios · grafo: 17.
-- [ ] Comando `sync_axioms()`: cada axioma de la librería existe como nodo AXIOM con tono asignado
+- [x] Comando `sync_axioms()`: cada axioma de la librería existe como nodo AXIOM con tono asignado — **HECHA 2026-08-25**: `scripts/sync_axioms.py` (importa `build_standard_registry` desde el repo del protocolo vía `AXIOMA_PROTOCOL_REPO`); IDs estables `AXIOM.LIB.<axiom_id>` → idempotente verificado (corrida 2: "0 nuevos, 20 ya existían"); repinta cadenas y guarda. Grafo: 76→96 nodos, 17→37 axiomas (20 librería + 17 personales), 0 huérfanos
 
 ---
 
 ## P3 — Producto e innovación (después del veredicto de F8)
 
-### P3.12 — Decidir F7 (binding holográfico) por datos
+### P3.12 — Decidir F7 (binding holográfico) por datos — **DECIDIDA 2026-08-25: ADOPTAR CON FIX DE CLAVE UNITARIA**
 Convolución circular para multi-cadena, postergada "si F5 se queda corto". Criterio ya escrito: similitud coseno >0.95 al deshacer enganche.
-- [ ] Micro-benchmark una vez + decisión archivada (lleva meses pendiente sin costar medirla)
+- [x] Micro-benchmark una vez + decisión archivada — **HECHA 2026-08-25** (`scripts/p312_benchmark_holographic.py`): código original FALLA su criterio — mapped mean 0.858/0.863 @dim256/2048, y subir dimensión NO ayuda (ruido |FFT(a)|² no desaparece con N; correlación circular solo es exacta con claves unitarias en dominio de Fourier). Fix: `bind/unbind` unitarizan SOLO la clave (`A/|A|`; el valor se recupera crudo y exacto) — backup `holographic.py.bak-20260825-p312`. Post-fix: B@2048 mapped mean=1.0000 (min 0.9993), timing bind 0.372→0.352 ms. E2E motor real (`scripts/p312_e2e.py`): query holográfica sobre las 96 firmas de producción OK, unbind(bind(self,firma))=1.000000, roundtrip save/load OK. Firmas viejas siguen válidas (el fix no cambia la firma de un nodo, solo la calidad al deshacer enganches)
 
 ### P3.13 — Tablero de telemetría MARP
 Logs diarios existen (`~/.hermes/logs/marp_router`); scheduler v2 trackea `prefetch_hits/misses` pero nada los lee.

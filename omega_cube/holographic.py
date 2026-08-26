@@ -116,18 +116,31 @@ class HolographicEncoder:
         self._basis_cache[key] = vec
         return vec
     
+    # P3.12 (2026-08-25): micro-benchmark demostro que bind/unbind SIN clave
+    # unitaria en dominio de Fourier recupera solo ~0.86 mapped (<0.95) y que
+    # subir la dimension NO ayuda (ruido |FFT(a)|^2 no desaparece con dim).
+    # Con clave unitaria: recuperacion >= 0.995 (tipicamente exacta). Ver
+    # scripts/p312_benchmark_holographic.py y p312c_key_only.py.
+    _EPS_FREQ = 1e-12
+
+    @staticmethod
+    def _unit_freq(v_arr: np.ndarray) -> np.ndarray:
+        """Proyecta el espectro a fase unitaria: A/|A| (clamp epsilon)."""
+        A = np.fft.fft(v_arr)
+        return A / np.maximum(np.abs(A), HolographicEncoder._EPS_FREQ)
+
     def bind(self, v1: list[float], v2: list[float]) -> list[float]:
         """
-        Circular convolution: the fundamental binding operation.
-        
+        Circular convolution with frequency-unitary key.
+
         Binds two vectors to create a new vector that represents 
         their association. Approximate inverse of unbind.
+        P3.12: v1 se usa como CLAVE -> su espectro se proyecta a fase
+        unitaria para que unbind(bind(a,b),a) recupere b sin ruido.
         """
-        # Use FFT for circular convolution O(n log n)
-        # bind(a,b) = ifft(fft(a) * fft(b))
-        v1_arr = np.array(v1)
-        v2_arr = np.array(v2)
-        result = np.real(np.fft.ifft(np.fft.fft(v1_arr) * np.fft.fft(v2_arr)))
+        v1_arr = np.asarray(v1, dtype=float)
+        v2_arr = np.asarray(v2, dtype=float)
+        result = np.real(np.fft.ifft(self._unit_freq(v1_arr) * np.fft.fft(v2_arr)))
         # Normalize
         norm = np.linalg.norm(result)
         if norm > 0:
@@ -138,11 +151,12 @@ class HolographicEncoder:
         """
         Circular correlation: recovers v2 from bind(v1, v2) given v1.
         Uses FFT for O(n log n) performance (matches bind complexity).
+        P3.12: misma proyeccion de fase unitaria sobre la clave v1;
+        si bound proviene de bind(), la recuperacion es practicamente exacta.
         """
-        bound_arr = np.array(bound)
-        v1_arr = np.array(v1)
-        # Circular correlation = ifft(fft(bound) * conj(fft(v1)))
-        result = np.real(np.fft.ifft(np.fft.fft(bound_arr) * np.conj(np.fft.fft(v1_arr))))
+        bound_arr = np.asarray(bound, dtype=float)
+        v1_arr = np.asarray(v1, dtype=float)
+        result = np.real(np.fft.ifft(np.fft.fft(bound_arr) * np.conj(self._unit_freq(v1_arr))))
         norm = np.linalg.norm(result)
         if norm > 0:
             result = result / norm
